@@ -24,22 +24,24 @@ type
     _y : integer;
   end;
   Player = record
-    _col      : Collider;
-    _pos      : Transform;
-    _sprite   : word = 1;
+    _col       : Collider;
+    _pos       : Transform;
+    _sprite    : word = 1;
     
-    Speed     : word;
-    Up        : word;
-    Left      : word;
-    Down      : word;
-    Right     : word;
-    Place     : word;
-    PlayerId  : byte;
-    BombCount : byte;
+    Speed      : word;
+    Up         : word;
+    Left       : word;
+    Down       : word;
+    Right      : word;
+    Place      : word;
+    PlayerId   : byte;
+    BombCount  : byte;
     
-    Respawn   : integer;
-    IsDead    : boolean;
-    Name      : string;
+    Respawn    : integer;
+    IsDead     : boolean;
+    Immortal   : integer;
+    IsImmortal : boolean;
+    Name       : string;
   end;
   Enemy = record
     _col          : Collider;
@@ -183,6 +185,22 @@ begin
   end;
 end;
 
+procedure Immortaldown(dt : integer);
+begin
+  if (GameplayState.Player1.IsImmortal) then
+  begin
+    GameplayState.Player1.Immortal := GameplayState.Player1.Immortal - dt;
+    if (GameplayState.Player1.Immortal <= 0) then
+      GameplayState.Player1.IsImmortal := false;
+  end;
+  if (GameplayState.Player2.IsImmortal) then
+  begin
+    GameplayState.Player2.Immortal := GameplayState.Player2.Immortal - dt;
+    if (GameplayState.Player2.Immortal <= 0) then
+      GameplayState.Player2.IsImmortal := false;
+  end;
+end;
+
 function IsCollide(first, second : Collider) : boolean;
 begin
   if ((first.Pooled = false) or (second.Pooled = false)) then
@@ -206,6 +224,15 @@ begin
     begin
       IsCollide := true;
     end;
+  end;
+end;
+
+procedure TryKillPlayer(var _player : Player);
+begin
+  if (not _player.IsImmortal) then
+  begin
+    _player.Respawn := 2000;
+    _player.IsDead := true;
   end;
 end;
 
@@ -273,7 +300,7 @@ begin
   end;
 end;
 
-procedure MovePlayer(var movablePlayer : Player);
+procedure MovePlayer(var movablePlayer : Player; dt : integer);
 begin
   if (not movablePlayer.IsDead) then
   begin
@@ -281,19 +308,19 @@ begin
     newCol := movablePlayer._col;
     if (inputKeys[movablePlayer.Up]) then
     begin
-      newCol._y := newCol._y - movablePlayer.Speed;
+      newCol._y := newCol._y - round(movablePlayer.Speed * dt / 1000);
     end
     else if (inputKeys[movablePlayer.Left]) then
     begin
-      newCol._x := newCol._x - movablePlayer.Speed;
+      newCol._x := newCol._x - round(movablePlayer.Speed * dt / 1000);
     end
     else if (inputKeys[movablePlayer.Down]) then
     begin
-      newCol._y := newCol._y + movablePlayer.Speed;
+      newCol._y := newCol._y + round(movablePlayer.Speed * dt / 1000);
     end
     else if (inputKeys[movablePlayer.Right]) then
     begin
-      newCol._x := newCol._x + movablePlayer.Speed;
+      newCol._x := newCol._x + round(movablePlayer.Speed * dt / 1000);
     end;
     if (not CheckCollision(newCol)) then
     begin
@@ -328,8 +355,7 @@ begin
     end;
     if (CheckCollisionWithEnemy(movablePlayer._col)) then
     begin
-      movablePlayer.Respawn := 1500;
-      movablePlayer.IsDead := true;
+      TryKillPlayer(movablePlayer);
       if (movablePlayer.PlayerId = 1) then
         GameplayState.Player1Score := GameplayState.Player1Score - 3
       else 
@@ -450,8 +476,7 @@ begin
       GameplayState.Player2Score := GameplayState.Player2Score + 5;
     end;
     
-    GameplayState.Player1.Respawn := 1500;
-    GameplayState.Player1.IsDead := true;
+    TryKillPlayer(GameplayState.Player1);
     GameplayState.Player1Score := GameplayState.Player1Score - 3;
     
   end;
@@ -466,8 +491,7 @@ begin
     begin
       GameplayState.Player1Score := GameplayState.Player1Score + 5;
     end;
-    GameplayState.Player2.Respawn := 1500;
-    GameplayState.Player2.IsDead := true;
+    TryKillPlayer(GameplayState.Player2);
     GameplayState.Player2Score := GameplayState.Player2Score - 3;
     
   end;
@@ -603,13 +627,16 @@ end;
 
 function IsEmpty(x, y : integer) : boolean;
 begin
-  if ((GameplayState.Map[y, x] = 1) or (GameplayState.Map[y, x] = 2)) then
+  if (x > 0) and (x < 16) and (y > 0) and (y < 12) then
   begin
-    IsEmpty := false;
-  end
-  else
-  begin
-    IsEmpty := true;
+    if ((GameplayState.Map[y, x] = 1) or (GameplayState.Map[y, x] = 2)) then
+    begin
+      IsEmpty := false;
+    end
+    else
+    begin
+      IsEmpty := true;
+    end;
   end;
 end;
 
@@ -651,6 +678,8 @@ begin
     GameplayState.Player1.IsDead      := false;
     GameplayState.Player1.Respawn     := 0;
     GameplayState.Player1._col.Pooled := true;
+    GameplayState.Player1.IsImmortal  := true;
+    GameplayState.Player1.Immortal    := 1500;
   end;
   if (playerId = 2) then
   begin
@@ -661,6 +690,8 @@ begin
     GameplayState.Player2.IsDead      := false;
     GameplayState.Player2.Respawn     := 0;
     GameplayState.Player2._col.Pooled := true;
+    GameplayState.Player2.IsImmortal  := true;
+    GameplayState.Player2.Immortal    := 1500;
   end;
 end;
 
@@ -740,19 +771,19 @@ begin
     EnemyType := Random(1, 3);
     if (EnemyType = FastEnemy) then
     begin
-      Speed := 3;
+      Speed := 150;
       _sprite := 6;
     end
     else
     if (EnemyType = SlowEnemy) then
     begin
-      Speed := 2;
+      Speed := 125;
       _sprite := 7;
     end
     else
     if (EnemyType = BlowupEnemy) then
     begin
-      Speed := 2;
+      Speed := 125;
       _sprite := 8;
     end;
     Respawn := 0;
@@ -819,11 +850,11 @@ end;
 function GetCurPosInArr(var _enemy : Enemy) : Transform;
 begin
   var trans : Transform;
-  if (((_enemy._pos._x + 60) div 64 + 1) <> _enemy.NewPosInArray._x) and ((_enemy._pos._x div 64 + 1) <> _enemy.NewPosInArray._x) then
+  if (((_enemy._pos._x + 58) div 64 + 1) <> _enemy.NewPosInArray._x) and ((_enemy._pos._x div 64 + 1) <> _enemy.NewPosInArray._x) then
   begin
     _enemy.NewPosInArray._x := _enemy._pos._x div 64 + 1;
   end;
-  if (((_enemy._pos._y + 60) div 64 + 1) <> _enemy.NewPosInArray._y) and ((_enemy._pos._y div 64 + 1) <> _enemy.NewPosInArray._y)then
+  if (((_enemy._pos._y + 58) div 64 + 1) <> _enemy.NewPosInArray._y) and ((_enemy._pos._y div 64 + 1) <> _enemy.NewPosInArray._y)then
   begin
     _enemy.NewPosInArray._y := _enemy._pos._y div 64 + 1;
   end;
@@ -904,22 +935,22 @@ begin
           case GameplayState.Enemies[i].Direction of
             ToUp :
             begin
-              GameplayState.Enemies[i]._pos._y := GameplayState.Enemies[i]._pos._y - GameplayState.Enemies[i].Speed;
+              GameplayState.Enemies[i]._pos._y := GameplayState.Enemies[i]._pos._y - round(GameplayState.Enemies[i].Speed * dt / 1000);
               GameplayState.Enemies[i]._col._y := GameplayState.Enemies[i]._pos._y;
             end;
             ToDown :
             begin
-              GameplayState.Enemies[i]._pos._y := GameplayState.Enemies[i]._pos._y + GameplayState.Enemies[i].Speed;
+              GameplayState.Enemies[i]._pos._y := GameplayState.Enemies[i]._pos._y + round(GameplayState.Enemies[i].Speed * dt / 1000);
               GameplayState.Enemies[i]._col._y := GameplayState.Enemies[i]._pos._y;
             end;
             ToRight :
             begin
-              GameplayState.Enemies[i]._pos._x := GameplayState.Enemies[i]._pos._x + GameplayState.Enemies[i].Speed;
+              GameplayState.Enemies[i]._pos._x := GameplayState.Enemies[i]._pos._x + round(GameplayState.Enemies[i].Speed * dt / 1000);
               GameplayState.Enemies[i]._col._x := GameplayState.Enemies[i]._pos._x;
             end;
             ToLeft :
             begin
-              GameplayState.Enemies[i]._pos._x := GameplayState.Enemies[i]._pos._x - GameplayState.Enemies[i].Speed;
+              GameplayState.Enemies[i]._pos._x := GameplayState.Enemies[i]._pos._x - round(GameplayState.Enemies[i].Speed * dt / 1000);
               GameplayState.Enemies[i]._col._x := GameplayState.Enemies[i]._pos._x;
             end;
           end;
@@ -1120,7 +1151,7 @@ begin
     Player1._col._offsetX     := 16;
     Player1._col._offsetY     := 6;
     Player1._col.Pooled       := false;
-    Player1.Speed             := 2;
+    Player1.Speed             := 125;
     Player1.Down              := VK_S;
     Player1.Up                := VK_W;
     Player1.Left              := VK_A;
@@ -1141,7 +1172,7 @@ begin
     Player2._col._offsetX     := 16;
     Player2._col._offsetY     := 6;
     Player2._col.Pooled       := true;
-    Player2.Speed             := 2;
+    Player2.Speed             := 125;
     Player2.Down              := VK_DOWN;
     Player2.Up                := VK_UP;
     Player2.Left              := VK_LEFT;
@@ -1263,13 +1294,14 @@ begin
   HandleInputInMainGame();
   if (not IsPause) then
   begin
-    MovePlayer(GameplayState.Player1);
-    MovePlayer(GameplayState.Player2);
+    MovePlayer(GameplayState.Player1, dt);
+    MovePlayer(GameplayState.Player2, dt);
     UpdateEnemy(dt);
     Countdown(dt);
     Bombdown(dt);
     Firedown(dt);
     Respawndown(dt);
+    Immortaldown(dt);
     UpdateBomb(dt);
     UpdateFire(dt);
     UpdateRespawn(dt);
