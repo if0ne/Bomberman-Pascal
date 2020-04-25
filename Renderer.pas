@@ -68,7 +68,7 @@ end;
 procedure RenderGrass;
 begin
   SetBrushStyle(bsSolid);
-  SetBrushColor(clYellowGreen);
+  SetBrushColor(RGB(207, 219, 122));
   //Constants: 15 = MapX, 11 = MapY
   FillRectangle(x + offset_x, y + offset_y, 15 * 64 + offset_x, 11 * 64 + offset_y);
 end;

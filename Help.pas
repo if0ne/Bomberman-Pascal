@@ -24,13 +24,13 @@ var
 
 procedure InitHelp;
 begin
-  Count := 4;
-  CurrentOp := 1;
   HelpStr[1] := 'WASD - управлением игроком 1. G - поставить бомбу.';
   HelpStr[2] := '↑←↓→ - управлением игроком 2. L - поставить бомбу.';
-  HelpStr[3] := 'Взрыв стенки - 1 балл, игрока - 5 баллов.';
+  HelpStr[3] := 'Взрыв стенки - 1 балл, монстра - 3 балла, игрока - 5 баллов.';
   HelpStr[4] := 'Смерть - -3 балла.';
   Options[1] := 'Назад';
+  Count := 4;
+  CurrentOp := 1;
 end;
 
 procedure HandleInputInHelp;
@@ -96,30 +96,28 @@ begin
   Window.Clear();
   SetBrushStyle(bsSolid);
   Background.Draw(0, 0);
-  HelpTitle.Draw(300, 48);
+  //Constants: 78 - размер по макету
+  DrawHeader(Window.Width div 2, 78, 'СПРАВКА');
+  //Constants: 74, 154 - размер по макету
   HelpBack.Draw(74, 154);
   SetBrushStyle(bsClear);
-  SetFontSize(18);
+  SetFontSize(16);
   SetFontColor(clWhite);
   for var i:=1 to Count do
   begin
+    //Constants: 96, 158, 50 - размер по макету
     TextOut(96, 158 + 50 * i, i + '. ' + HelpStr[i]);
   end;
   SetBrushStyle(bsSolid);
-  SetFontSize(26);
   SetFontColor(clBlack);
   for var i:=1 to MaxOptions do
   begin
+    var isActive := false;
     if (CurrentOp = i) then
     begin
-      ActiveButton.Draw(Window.Width div 2 - 128, 502 + 88 * (i - 1) - 36);
-    end
-    else
-    begin
-      Button.Draw(Window.Width div 2 - 128, 502 + 88 * (i - 1) - 36);
+      isActive := true;
     end;
-    SetBrushStyle(bsClear);
-    DrawTextCentered(Window.Width div 2, 502 + 88 * (i - 1) + 8, Options[i]);
+    DrawButton(Window.Width div 2, 502 + 88 * (i - 1) + 8, Options[i], defaultSize, true);
   end;
 end;
 

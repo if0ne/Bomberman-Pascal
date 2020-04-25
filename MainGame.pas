@@ -8,6 +8,22 @@ procedure UpdateMainGame(dt : integer);
 procedure RenderMainGame();
 procedure DisposeMainGame();
 
+
+implementation
+
+uses
+  GraphABC, GlobalVars, Renderer, UIAssets;
+
+const
+  
+  SpawnDelay  = 1000;
+  ChangeDelay = 1000;
+  
+  ToUp    = 1;
+  ToRight = 2;
+  ToDown  = 3;
+  ToLeft  = 4;
+  
 type
   Collider = record
       _x       : integer;
@@ -122,21 +138,6 @@ type
     
   end;
 
-implementation
-
-uses
-  GraphABC, GlobalVars, Renderer;
-
-const
-  
-  SpawnDelay  = 1000;
-  ChangeDelay = 1000;
-  
-  ToUp    = 1;
-  ToRight = 2;
-  ToDown  = 3;
-  ToLeft  = 4;
-  
 var
   GameplayState : GameState;
   MainTime : longint;
@@ -353,7 +354,7 @@ begin
         end;
       end;
     end;
-    if (CheckCollisionWithEnemy(movablePlayer._col)) then
+    if ((CheckCollisionWithEnemy(movablePlayer._col)) and (not movablePlayer.IsImmortal)) then
     begin
       TryKillPlayer(movablePlayer);
       if (movablePlayer.PlayerId = 1) then
@@ -1219,7 +1220,7 @@ begin
     if (Milliseconds() - LastChange > DelayInput) then
     begin
       LastChange := Milliseconds();
-      MainTime := MainTime - 500;
+      MainTime := MainTime - 2000;
     end;
   end;
   if (inputKeys[VK_ESCAPE]) then
@@ -1352,22 +1353,24 @@ begin
   if (IsPause) then
   begin
     SetBrushStyle(bsSolid);
-    SetBrushColor(clChocolate);
-    FillRect(Window.Width div 2 - 128, Window.Height div 2 - 96, Window.Width div 2 + 128, Window.Height div 2 + 96);
+    
+    SetBrushColor(ARGB(50, 0, 0, 0));
+    FillRectangle(0, 0, 960, 768);
+    
+    PauseBack.Draw(Window.Width div 2 - 128, Window.Height div 2 - 96);
     SetFontSize(26);
-    SetBrushStyle(bsClear);
+    SetFontColor(clWhite);
     DrawTextCentered(Window.Width div 2, Window.Height div 2 - 54, 'Пауза');
     SetFontSize(20);
     for var i := 1 to 2 do
     begin
       if (CurrentOp = i) then
       begin
-        SetBrushStyle(bsSolid);
-        SetBrushColor(clLightBlue);
-        FillRect(Window.Width div 2 - 82, Window.Height div 2 - 54 - 22 + 50 * i, Window.Width div 2 + 82, Window.Height div 2 - 54 + 22 + 50 * i);
+        DrawChooseLine(Window.Width div 2 - 125, Window.Height div 2 - 74 + 50 * i, 251,  40);
       end;
       DrawTextCentered(Window.Width div 2, Window.Height div 2 - 54 + 50 * i, Options[i]);
     end;
+    SetFontColor(clBlack);
   end;
   
 end;

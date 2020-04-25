@@ -11,29 +11,31 @@ procedure DisposeMapMenu();
 implementation
 
 uses
-  GraphABC, GlobalVars;
-
+  GraphABC, GlobalVars, UIAssets;
+  
+const
+  MaxOptions = 1;
 var 
   TextFile : Text;
   Count : integer;
-  Maps : array[1..25] of string;
+  Maps : array[1..12] of string;
+  Options : array[1..MaxOptions] of string;
   CurrentOp : byte;
   i : integer;
   
 procedure InitMapMenu;
 begin
   CurrentOp := 1;
+  Options[1] := 'Назад';
   Count := 0;
   Assign(TextFile, 'maps.txt');
   Reset(TextFile);
-  while (not Eof(TextFile) and (Count < 24)) do
+  while (not Eof(TextFile) and (Count < 12)) do
   begin
     Count := Count + 1;
     Readln(TextFile, Maps[Count]);
   end;
   Close(TextFile);
-  Count := Count + 1;
-  Maps[Count] := 'Назад';
 end;
 
 procedure HandleInputInMapMenu;
@@ -43,7 +45,7 @@ begin
     if (Milliseconds() - LastChange > DelayInput) then
     begin
       LastChange := Milliseconds();
-      if (CurrentOp + 1 > Count) then
+      if (CurrentOp + 1 > Count + MaxOptions) then
       begin
         CurrentOp := 1;
       end
@@ -60,7 +62,7 @@ begin
       LastChange := Milliseconds();
       if (CurrentOp - 1  < 1) then
       begin
-        CurrentOp := Count;
+        CurrentOp := Count + MaxOptions;
       end
       else
       begin
@@ -73,7 +75,7 @@ begin
     if (Milliseconds() - LastChange > DelayInput) then
     begin
       LastChange := Milliseconds();
-      if (CurrentOp = Count) then
+      if (CurrentOp = Count + 1) then
       begin
         ChangeState(MenuState);
       end
@@ -101,20 +103,34 @@ end;
 
 procedure RenderMapMenu;
 begin
-  Window.Clear(clChocolate);
-  SetBrushStyle(bsClear);
+  SetBrushStyle(bsSolid);
+  Window.Clear();
+  Background.Draw(0, 0);
+  DrawHeader(Window.Width div 2, 78, 'Выберите карту');
   SetFontSize(26);
-  DrawTextCentered(Window.Width div 2, 128, 'Выберите карту.');
-  SetBrushStyle(bsClear);
-  SetBrushColor(clLightBlue);
   for var i:=1 to Count do
   begin
     if (CurrentOp = i) then
     begin
       SetBrushStyle(bsSolid);
-      FillRect(Window.Width div 2 - 82, 128 + 50 * i - 22, Window.Width div 2 + 82, 128 + 50 * i + 22);
+      SetPenWidth(2);
+      SetPenColor(clBlack);
+      SetBrushColor(RGB(201, 160, 230));
+      DrawChooseLine(-2, 118 + 50 * i - 20, Window.Width, 40);
+      SetPenWidth(0);
     end;
-    DrawTextCentered(Window.Width div 2, 128 + 50 * i, Maps[i]);
+    SetBrushStyle(bsClear);
+    DrawTextCentered(Window.Width div 2, 118 + 50 * i, Maps[i]);
+  end;
+  SetFontColor(clBlack);
+  for var i:=1 to MaxOptions do
+  begin
+    var isActive := false;
+    if (CurrentOp = (i + Count)) then
+    begin
+      isActive := true;
+    end;
+    DrawButton(Window.Width div 2, 138 + 50 *(Count + i), Options[i], defaultSize, isActive);
   end;
 end;
 

@@ -11,7 +11,7 @@ procedure DisposeInputNames();
 implementation
 
 uses
-  GraphABC, GlobalVars;
+  GraphABC, GlobalVars, UIAssets;
 
 var
   CurrentOp : byte;
@@ -150,26 +150,17 @@ end;
 
 procedure RenderInputNames;
 begin
-  Window.Clear(clChocolate);
+  Window.Clear();
+  Background.Draw(0, 0);
   SetBrushStyle(bsClear);
+  DrawHeader(Window.Width div 2, 78, 'Введите никнеймы');
+  DrawLabel(Window.Width div 2, 178, 'Чтобы закончить ввод - нажмите Enter.');
   SetFontSize(26);
-  DrawTextCentered(Window.Width div 2, 128, 'Введите никнеймы.');
-  DrawTextCentered(Window.Width div 2, 156, 'Чтобы закончить ввод - нажмите Enter.');
-  SetBrushStyle(bsClear);
-  SetBrushColor(clLightBlue);
   for var i:=1 to 3 do
   begin
-    if (CurrentOp = i) then
+    if (i < 3) and (CurrentOp = i) then
     begin
-      SetBrushStyle(bsSolid);
-      if (i = 3) then
-      begin
-        FillRect(Window.Width div 2 - 82, 156 + 64 * i - 22, Window.Width div 2 + 82, 156 + 64 * i + 22);
-      end
-      else
-      begin
-        FillRect(Window.Width div 2 - 402, 156 + 64 * i, Window.Width div 2 - 128, 156 + 64 * i + 44);
-      end;
+      DrawChooseLine(0, 156 + 64 * i, Window.Width, 40);
     end;
     SetBrushStyle(bsClear);
     if (i = 1) then
@@ -183,13 +174,15 @@ begin
     end
     else
     begin
-      DrawTextCentered(Window.Width div 2, 156 + 64 * i, Options[i]);
+      var isActive := false;
+      if ((i > 2) and (CurrentOp = i)) then
+        isActive := true;
+      DrawButton(Window.Width div 2, 176 + 64 * i, Options[i], defaultSize, isActive);
     end;
   end;
-  SetFontSize(8);
   for var i:=1 to CountProblem do
   begin
-    TextOut(64, 354 + 25 * i, Problems[i]);
+    DrawLabel(Window.Width div 2, 388 + 64 * i, Problems[i]);
   end;
   SetBrushStyle(bsSolid)
 end;

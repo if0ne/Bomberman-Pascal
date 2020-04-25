@@ -112,21 +112,20 @@ procedure RenderMenu;
 begin
   Window.Clear();
   SetBrushStyle(bsSolid);
-  MenuBackground.Draw(0, 0);
-  Logo.Draw(405, 250 + Round(10 * Sin(RadToDeg(Time))));
-  SetFontSize(26);
+  Background.Draw(0, 0);
+  //Constants: 94, 87 - размеры из макета
+  Title.Draw(94, 87);
+  //Constants: 440, 216 - размеры из макета
+  Logo.Draw(440, 216 + Round(10 * Sin(RadToDeg(Time))));
   for var i:=1 to MaxOptions do
   begin
+    var isActive :=false;
     if (CurrentOp = i) then
     begin
-      ActiveButton.Draw(Window.Width div 2 - 128, Window.Height div 2 + 88 * i - 156);
-    end
-    else
-    begin
-      Button.Draw(Window.Width div 2 - 128, Window.Height div 2 + 88 * i - 156);
+      isActive := true;
     end;
-    SetBrushStyle(bsClear);
-    DrawTextCentered(Window.Width div 2, Window.Height div 2 + 88 * i - 112, Options[i]);
+    //Constants: 322 - Смещение сверху, высчитано из макета, 94 - размер кнопки + расстояние между ними (84 + 10)
+    DrawButton(Window.Width div 2, 322 + 94 * (i - 1), Options[i], defaultSize, isActive);
   end;
 end;
 

@@ -16,13 +16,15 @@ procedure DisposeHighscore();
 implementation
 
 uses
-  GraphABC, GlobalVars;
+  GraphABC, GlobalVars, UIAssets;
 
+const
+  MaxOptions = 1;
 var 
   TextFile : Text;
   Count : integer;
   NickAndScores : array[1..7] of string;
-  Options   : array[1..1] of string;
+  Options   : array[1..MaxOptions] of string;
   CurrentOp : byte;
   
   NewNick : array[1..27] of string;
@@ -173,7 +175,7 @@ begin
     if (Milliseconds() - LastChange > DelayInput) then
     begin
       LastChange := Milliseconds();
-      if (CurrentOp + 1 > 1) then
+      if (CurrentOp + 1 > MaxOptions) then
       begin
         CurrentOp := 1;
       end
@@ -190,7 +192,7 @@ begin
       LastChange := Milliseconds();
       if (CurrentOp - 1  < 1) then
       begin
-        CurrentOp := 1;
+        CurrentOp := MaxOptions;
       end
       else
       begin
@@ -226,7 +228,7 @@ begin
     if (Milliseconds() - LastChange > DelayInput) then
     begin
       LastChange := Milliseconds();
-      if (CurrentOp + 1 > 1) then
+      if (CurrentOp + 1 > MaxOptions) then
       begin
         CurrentOp := 1;
       end
@@ -243,7 +245,7 @@ begin
       LastChange := Milliseconds();
       if (CurrentOp - 1  < 1) then
       begin
-        CurrentOp := 1;
+        CurrentOp := MaxOptions;
       end
       else
       begin
@@ -284,77 +286,68 @@ end;
 
 procedure RenderHighscore;
 begin
-  Window.Clear(clChocolate);
-  SetBrushStyle(bsClear);
-  DrawTextCentered(Window.Width div 2, 128, 'Таблица рекордов.');
+  Window.Clear();
+  SetBrushStyle(bsSolid);
+  Background.Draw(0, 0);
+  DrawHeader(Window.Width div 2, 78, 'Таблица рекордов');
   for var i:=1 to Count do
   begin
-    SetBrushStyle(bsSolid);
+    var scoreType := DefaultType;
     if (i = 1) then
     begin
-      SetBrushColor(clYellow);
+      scoreType := GoldType;
     end
     else
     if (i = 2) then
     begin
-      SetBrushColor(clGray);
+      scoreType := SilverType;
     end
     else
     if (i = 3) then
     begin
-      SetBrushColor(clOrange);
-    end
-    else
-    begin
-      SetBrushStyle(bsClear);
+      scoreType := BronzeType;
     end;
-    FillRect(Window.Width div 2 - 100, 128 + 50 * i - 22, Window.Width div 2 + 100, 128 + 50 * i + 22);
-    DrawTextCentered(Window.Width div 2, 128 + 50 * i, NickAndScores[i]);
+    DrawScoreLabel(Window.Width div 2, 128 + 74 * i,  NickAndScores[i], scoreType);
   end;
-  SetBrushStyle(bsClear);
-  SetBrushColor(clLightBlue);
   for var i:=1 to 1 do
   begin
+    var isActive := false;
     if (CurrentOp = i) then
     begin
-      SetBrushStyle(bsSolid);
-      FillRect(Window.Width div 2 - 82, 128 + 50 * (Count + i) - 22, Window.Width div 2 + 82, 128 + 50 * (Count + i) + 22);
+      isActive := true
     end;
-    DrawTextCentered(Window.Width div 2, 128 + 50 * (Count + i), Options[i]);
+    DrawButton(Window.Width div 2, 128 + 74 * (Count + i) + 15, Options[i], defaultSize, isActive);
   end;
 end;
 
 procedure RenderNewHighscore;
-var 
-  i : integer;
 begin
-  Window.Clear(clChocolate);
-  SetBrushStyle(bsClear);
-  DrawTextCentered(Window.Width div 2, 128, 'Ваши результаты.');
-  for i:=1 to NewCount do
+  Window.Clear();
+  SetBrushStyle(bsSolid);
+  Background.Draw(0, 0);
+  DrawHeader(Window.Width div 2, 78, 'Ваши результаты');
+  for var i:=1 to NewCount do
   begin
     if ((i = Pos1) or (i = Pos2)) then
     begin
-      SetBrushStyle(bsSolid);
-      SetBrushColor(clWhite);
-      FillRect(Window.Width div 2 - 100, 128 + 50 * i - 22, Window.Width div 2 + 100, 128 + 50 * i + 22);
+      DrawScoreLabel(Window.Width div 2, 98 + 74 * i,  NewNick[i] + ' ' + NewScore[i], NewType);
+    end
+    else
+    begin
+      DrawScoreLabel(Window.Width div 2, 98 + 74 * i,  NewNick[i] + ' ' + NewScore[i], DefaultType);
     end;
-    SetBrushStyle(bsClear);
-    DrawTextCentered(Window.Width div 2, 128 + 50 * i, NewNick[i] + ' ' + NewScore[i]);
   end;
-  SetBrushStyle(bsClear);
-  SetBrushColor(clLightBlue);
-  for i:=1 to 1 do
+  for var i:=1 to MaxOptions do
   begin
+    var isActive := false;
     if (CurrentOp = i) then
     begin
-      SetBrushStyle(bsSolid);
-      FillRect(Window.Width div 2 - 82, 128 + 50 * (NewCount + i) - 22, Window.Width div 2 + 82, 128 + 50 * (NewCount + i) + 22);
+      isActive := true;
     end;
-    DrawTextCentered(Window.Width div 2, 128 + 50 * (NewCount + i), Options[i]);
+    DrawButton(Window.Width div 2, 113 + 74 * (NewCount + i), Options[i], defaultSize, isActive);
   end;
-  DrawTextCentered(Window.Width div 2, 128 + 50 * (NewCount + i) + 50, FinalPlayer1);
-  DrawTextCentered(Window.Width div 2, 128 + 50 * (NewCount + i) + 100, FinalPlayer2);
+  DrawLabel(Window.Width div 2, 118 + 74 * (NewCount + MaxOptions + 1), FinalPlayer1);
+  DrawLabel(Window.Width div 2, 118 + 74 * (NewCount + MaxOptions + 2), FinalPlayer2);
 end;
 
 procedure DisposeHighscore;

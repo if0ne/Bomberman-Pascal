@@ -11,7 +11,7 @@ procedure DisposeEditor();
 implementation
 
 uses
-  GraphABC, GlobalVars, Renderer;
+  GraphABC, GlobalVars, Renderer, UIAssets;
 
 type
   EditorState = record
@@ -38,8 +38,8 @@ var
   CurrentBlock : word;
   CurrentState : word;
   
-  MapName : string;
-  
+  MapName  : string;
+  MapCount : integer;
   Problems : array[1..25] of string;
   CountProblem : integer;
   
@@ -84,13 +84,12 @@ end;
 function ContainsMap(_mapName : string) : boolean;
 var
   MapFile : Text;
-  MapCount : integer;
-  Maps : array[1..25] of string;
+  Maps : array[1..15] of string;
 begin
   Assign(MapFile, 'maps.txt');
   Reset(MapFile);
   MapCount := 0;
-  while (not Eof(MapFile) and (MapCount < 24)) do
+  while (not Eof(MapFile) and (MapCount < 12)) do
   begin
     MapCount := MapCount + 1;
     Readln(MapFile, Maps[MapCount]);
@@ -304,9 +303,17 @@ begin
       end;
       if ((MapName <> '') and (not ContainsMap(MapName)) and (RightMap())) then
       begin
-        SaveMapWithName(MapName);
-        CurrentState := EditState;
-        ChangeState(MenuState);
+        if (MapCount >= 12) then
+        begin
+          CountProblem:=CountProblem+1;
+          Problems[CountProblem]:='Количество созданых карт максимально';
+        end
+        else
+        begin
+          SaveMapWithName(MapName);
+          CurrentState := EditState;
+          ChangeState(MenuState);
+        end;
       end;
     end;
   end;
@@ -492,16 +499,18 @@ end;
 
 procedure RenderInSaveMode();
 begin
-  Window.Clear(clChocolate);
-  SetBrushStyle(bsClear);
+  SetBrushStyle(bsSolid);
+  Window.Clear();
+  Background.Draw(0, 0);
+  DrawLabel(Window.Width div 2, 78, 'Введите название карты');
+  DrawLabel(Window.Width div 2, 156, 'Чтобы закончить ввод - нажмите Enter.');
   SetFontSize(26);
-  DrawTextCentered(Window.Width div 2, 128, 'Введите название карты.');
-  DrawTextCentered(Window.Width div 2, 156, 'Чтобы закончить ввод - нажмите Enter.');
-  TextOut(Window.Width div 2 - 372, 156 + 64, 'Название карты: ' + MapName);
-  SetFontSize(8);
+  DrawChooseLine(0, 220, Window.Width, 40);
+  SetBrushStyle(bsClear);
+  TextOut(Window.Width div 2 - 372, 220, 'Название карты: ' + MapName);
   for var i:=1 to CountProblem do
   begin
-    TextOut(64, 156 + 88 + 25 * i, Problems[i]);
+    DrawLabel(Window.Width div 2, 234 + 74 * i, Problems[i]);
   end;
 end;
 
