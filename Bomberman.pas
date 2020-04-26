@@ -128,9 +128,9 @@ begin
     begin
       SetWindowTitle('Bombermam (FPS:' + Trunc(1/DeltaTime * 1000) + ')');
     end;
-    if (16 - DeltaTime >= 0) then
+    if (17 - DeltaTime >= 0) then
     begin
-      Sleep(16 - DeltaTime);
+      Sleep(17 - DeltaTime);
     end;
   end;
   UnlockDrawing();

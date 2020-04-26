@@ -13,45 +13,61 @@ implementation
 uses
   GraphABC, GlobalVars, UIAssets;
 
+const
+  MaxOptions = MaxPlayers + 1;
+
 var
   CurrentOp : byte;
-  Options : array[1..3] of string;
-  Player1, Player2 : string;
+  Options : array[1..MaxOptions] of string;
+  InputPlayerNames : plNames;
   
-  Problems : array[1..25] of string;
+  Problems : array[1..5] of string;
   CountProblem : integer;
 
 procedure InitInputNames;
 begin
   CurrentOp := 1;
-  Options[1] := 'Имя игрока 1: ';
-  Options[2] := 'Имя игрока 2: ';
-  Options[3] := 'Назад';
-  Player1 := '';
-  Player2 := '';
+  for var i:=1 to MaxPlayers do
+  begin
+    Options[i] := 'Имя игрока ' + i + ':';
+    InputPlayerNames[i] := '';
+  end;
+  Options[MaxPlayers + 1] := 'Назад';
   CountProblem := 0;
 end;
 
 procedure TryToChangeState();
 begin
   CountProblem := 0;
-  if ((Player1 = '') or (Player2 = '')) then
+  for var i:=1 to MaxPlayers do
   begin
-    CountProblem := CountProblem + 1;
-    Problems[CountProblem] := 'Имя игрока 1 или игрока 2 пустое.'
-  end
-  else
-  if (Player1 = Player2) then
-  begin
-    CountProblem := CountProblem + 1;
-    Problems[CountProblem] := 'Имя игрока 1 и игрока 2 совпадают.'
-  end
-  else
-  begin
-    Player1Name := Player1;
-    Player2Name := Player2;
-    ChangeState(MainGameState);
+    if (InputPlayerNames[i] = '') then
+    begin
+      CountProblem := CountProblem + 1;
+      Problems[CountProblem] := 'Имя игрока ' + i + ' пустое.';
+    end;
   end;
+  if (CountProblem <> 0) then
+  begin
+    exit;
+  end;
+  for var i:=1 to MaxPlayers - 1 do
+  begin
+    for var j:=(i+1) to MaxPlayers do
+    begin
+      if (InputPlayerNames[i] = InputPlayerNames[j]) then
+      begin
+        CountProblem := CountProblem + 1;
+        Problems[CountProblem] := 'Имя игрока ' + i + ' и игрока ' + j + ' совпадают.';
+      end;
+    end;
+  end;
+  if (CountProblem <> 0) then
+  begin
+    exit;
+  end;
+  PlayerNames := InputPlayerNames;
+  ChangeState(MainGameState);
 end;
 
 procedure ChangeNick(var nick : string);
@@ -77,7 +93,7 @@ begin
     if (Milliseconds() - LastChange > DelayInput) then
     begin
       LastChange := Milliseconds();
-      if (CurrentOp + 1 > 3) then
+      if (CurrentOp + 1 > MaxOptions) then
       begin
         CurrentOp := 1;
       end
@@ -94,7 +110,7 @@ begin
       LastChange := Milliseconds();
       if (CurrentOp - 1  < 1) then
       begin
-        CurrentOp := 3;
+        CurrentOp := MaxOptions;
       end
       else
       begin
@@ -107,7 +123,7 @@ begin
     if (Milliseconds() - LastChange > DelayInput) then
     begin
       LastChange := Milliseconds();
-      if (CurrentOp = 3) then
+      if (CurrentOp = (MaxPlayers + 1)) then
       begin
         ChangeState(ChooseMapState);
       end
@@ -130,14 +146,9 @@ begin
     if (Milliseconds() - LastChange > DelayInput) then
     begin
       LastChange := Milliseconds();
-      if (CurrentOp = 1) then
+      if (CurrentOp <= MaxPlayers) then
       begin
-        ChangeNick(Player1);
-      end
-      else
-      if (CurrentOp = 2) then
-      begin
-        ChangeNick(Player2);
+        ChangeNick(InputPlayerNames[CurrentOp]);
       end;
     end;
   end;
@@ -156,33 +167,29 @@ begin
   DrawHeader(Window.Width div 2, 78, 'Введите никнеймы');
   DrawLabel(Window.Width div 2, 178, 'Чтобы закончить ввод - нажмите Enter.');
   SetFontSize(26);
-  for var i:=1 to 3 do
+  for var i:=1 to MaxOptions do
   begin
-    if (i < 3) and (CurrentOp = i) then
+    if (i <= MaxPlayers) then
     begin
-      DrawChooseLine(0, 156 + 64 * i, Window.Width, 40);
-    end;
-    SetBrushStyle(bsClear);
-    if (i = 1) then
-    begin
-      TextOut(Window.Width div 2 - 372, 156 + 64 * i, Options[i] + Player1);
-    end
-    else
-    if (i = 2) then
-    begin
-      TextOut(Window.Width div 2 - 372, 156 + 64 * i, Options[i] + Player2);
+      if (CurrentOp = i) then
+      begin
+        SetBrushStyle(bsSolid);
+        DrawChooseLine(0, 156 + 64 * i, Window.Width, 40);
+      end;
+      SetBrushStyle(bsClear);
+      TextOut(Window.Width div 2 - 372, 156 + 64 * i, Options[i] + InputPlayerNames[i]);
     end
     else
     begin
       var isActive := false;
-      if ((i > 2) and (CurrentOp = i)) then
+      if ((i > MaxPlayers) and (CurrentOp = i)) then
         isActive := true;
       DrawButton(Window.Width div 2, 176 + 64 * i, Options[i], defaultSize, isActive);
     end;
   end;
   for var i:=1 to CountProblem do
   begin
-    DrawLabel(Window.Width div 2, 388 + 64 * i, Problems[i]);
+    DrawLabel(Window.Width div 2, 196 + 64 * MaxOptions + 74 * i, Problems[i]);
   end;
   SetBrushStyle(bsSolid)
 end;

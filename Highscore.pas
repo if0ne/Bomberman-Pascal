@@ -3,7 +3,7 @@
 interface
 
 procedure InitHighscore();
-procedure InitNewHighscore(pl1s : integer; pl1n : string; pl2s : integer; pl2n : string);
+procedure InitNewHighscore();
 procedure HandleInputInHighscore();
 procedure HandleInputInNewHighscore();
 procedure UpdateNewHighscore(dt : integer);
@@ -20,20 +20,20 @@ uses
 
 const
   MaxOptions = 1;
+  MaxAllPlayer = MaxPlayers + 25;
 var 
   TextFile : Text;
   Count : integer;
-  NickAndScores : array[1..7] of string;
+  NickAndScores : array[1..5] of string;
   Options   : array[1..MaxOptions] of string;
   CurrentOp : byte;
   
-  NewNick : array[1..27] of string;
-  NewScore : array[1..27] of integer;
+  NewNick : array[1..MaxAllPlayer] of string;
+  NewScore : array[1..MaxAllPlayer] of integer;
   NewCount : integer;
   
-  Pos1, Pos2 : integer;
-  FinalPlayer1 : string;
-  FinalPlayer2 : string;
+  Poses : array[1..MaxPlayers] of integer;
+  FinalPlayers : array[1..MaxPlayers] of string;
 
 procedure ParseLine(var nick : string; var score : integer; str : string);
 var
@@ -84,6 +84,19 @@ begin
   end;
 end;
 
+function IsInTop(id : integer) : boolean;
+begin
+  IsInTop := false;
+  for var i:=1 to MaxPlayers do
+  begin
+    if (Poses[i] = id) then
+    begin
+      IsInTop := true;
+      exit;
+    end;
+  end;
+end;
+
 procedure InitHighscore;
 begin
   CurrentOp := 1;
@@ -113,48 +126,37 @@ begin
     Readln(TextFile, line);
     ParseLine(NewNick[Count], NewScore[Count], line);
   end;
-  if (not ReplaceSamePlayer(pl1n, pl1s)) then
+  for var i:=1 to MaxPlayers do
   begin
-    Count := Count + 1;
-    NewScore[Count] := pl1s;
-    NewNick[Count] := pl1n;
-  end;
-  if (not ReplaceSamePlayer(pl2n, pl2s)) then
-  begin
-    Count := Count + 1;
-    NewScore[Count] := pl2s;
-    NewNick[Count] := pl2n;
+    if (not ReplaceSamePlayer(PlayerNames[i], PlayerScores[i])) then
+    begin
+      Count := Count + 1;
+      NewScore[Count] := PlayerScores[i];
+      NewNick[Count] := PlayerNames[i];
+    end;
   end;
   SortNew();
   for var i:=1 to Count do
   begin
-    if (NewNick[i] = pl1n) then
+    for var j:=1 to MaxPlayers do
     begin
-      Pos1 := i;
-    end
-    else
-    if (NewNick[i] = pl2n) then
-    begin
-      Pos2 := i;
+      if (NewNick[i] = PlayerNames[j]) then
+      begin
+        Poses[j] := i;
+      end;
     end;
   end;
   
-  if (Pos1 <= 5) then
+  for var j:=1 to MaxPlayers do
   begin
-    FinalPlayer1 := 'Игрок ' + pl1n + ' находится на ' + Pos1 + ' месте.';
-  end
-  else
-  begin
-    FinalPlayer1 := 'Игрок ' + pl1n + ' не набрал достаточно очков, для топа.';
-  end;
-  
-  if (Pos2 <= 5) then
-  begin
-    FinalPlayer2 := 'Игрок ' + pl2n + ' находится на ' + Pos2 + ' месте.';
-  end
-  else
-  begin
-    FinalPlayer2 := 'Игрок ' + pl2n + ' не набрал достаточно очков, для топа.';
+    if (Poses[j] <= 5) then
+    begin
+      FinalPlayers[j] := 'Игрок ' + PlayerNames[j] + ' находится на ' + Poses[j] + ' месте.';
+    end
+    else
+    begin
+      FinalPlayers[j] := 'Игрок ' + PlayerNames[j] + ' не набрал достаточно очков, для топа.';
+    end;
   end;
   
   if (Count > 5) then
@@ -328,7 +330,7 @@ begin
   DrawHeader(Window.Width div 2, 78, 'Ваши результаты');
   for var i:=1 to NewCount do
   begin
-    if ((i = Pos1) or (i = Pos2)) then
+    if (IsInTop(i)) then
     begin
       DrawScoreLabel(Window.Width div 2, 98 + 74 * i,  NewNick[i] + ' ' + NewScore[i], NewType);
     end
@@ -346,8 +348,10 @@ begin
     end;
     DrawButton(Window.Width div 2, 113 + 74 * (NewCount + i), Options[i], defaultSize, isActive);
   end;
-  DrawLabel(Window.Width div 2, 118 + 74 * (NewCount + MaxOptions + 1), FinalPlayer1);
-  DrawLabel(Window.Width div 2, 118 + 74 * (NewCount + MaxOptions + 2), FinalPlayer2);
+  for var i:=1 to MaxPlayers do
+  begin
+    DrawLabel(Window.Width div 2, 118 + 74 * (NewCount + MaxOptions + i), FinalPlayers[i]);
+  end;
 end;
 
 procedure DisposeHighscore;

@@ -40,7 +40,7 @@ var
   
   MapName  : string;
   MapCount : integer;
-  Problems : array[1..25] of string;
+  Problems : array[1..5] of string;
   CountProblem : integer;
   
 procedure InitEditor;

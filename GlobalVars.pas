@@ -20,19 +20,22 @@ const
   
   TopOffset = 64;
   
+  MaxPlayers = 2;
+  
+type
+  plNames  = array[1..MaxPlayers] of string;
+  plScores = array[1..MaxPlayers] of integer;
+
 var
-  inputKeys : array[1..255] of boolean;
+  inputKeys : array[0..255] of boolean;
   LastChar : integer;
   IsQuit : boolean;
   LastChange : longint;
   _CurrentState : byte;
   _CurrentMap : string;
   
-  Player1Name : string;
-  Player2Name : string;
-  
-  Player1Score : integer;
-  Player2Score : integer;
+  PlayerNames  : plNames;
+  PlayerScores : plScores;
   
 procedure ChangeState(toState : byte); 
 procedure DisposeState(state : byte);
@@ -110,7 +113,7 @@ begin
     end;
     EndHighState :
     begin
-      InitNewHighscore(Player1Score, Player1Name, Player2Score, Player2Name);
+      InitNewHighscore();
     end;
     EditorState :
     begin

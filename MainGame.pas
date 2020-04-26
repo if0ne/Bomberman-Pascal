@@ -40,24 +40,26 @@ type
     _y : integer;
   end;
   Player = record
-    _col       : Collider;
-    _pos       : Transform;
-    _sprite    : word = 1;
+    _col        : Collider;
+    _pos        : Transform;
+    _sprite     : word = 1;
     
-    Speed      : word;
-    Up         : word;
-    Left       : word;
-    Down       : word;
-    Right      : word;
-    Place      : word;
-    PlayerId   : byte;
-    BombCount  : byte;
+    Speed       : word;
+    Up          : word;
+    Left        : word;
+    Down        : word;
+    Right       : word;
+    Place       : word;
     
-    Respawn    : integer;
-    IsDead     : boolean;
-    Immortal   : integer;
-    IsImmortal : boolean;
-    Name       : string;
+    PlayerId    : byte;
+    PlayerScore : integer;
+    BombCount   : byte;
+    
+    Respawn     : integer;
+    IsDead      : boolean;
+    Immortal    : integer;
+    IsImmortal  : boolean;
+    Name        : string;
   end;
   Enemy = record
     _col          : Collider;
@@ -103,11 +105,8 @@ type
     PlayerId : byte;
   end;
   GameState = record
-    Player1          : Player;
-    Player2          : Player;
-    Player1Score     : integer;
-    Player2Score     : integer;
-    
+    Players          : array[1..MaxPlayers] of Player;
+
     Map              : array[1..20, 1..20] of integer;
     MapX             : word;
     MapY             : word;
@@ -176,29 +175,25 @@ end;
 
 procedure Respawndown(dt : integer);
 begin
-  if (GameplayState.Player1.IsDead) then
+  for var i:=1 to MaxPlayers do
   begin
-    GameplayState.Player1.Respawn := GameplayState.Player1.Respawn - dt;
-  end;
-  if (GameplayState.Player2.IsDead) then
-  begin
-    GameplayState.Player2.Respawn := GameplayState.Player2.Respawn - dt;
+    if (GameplayState.Players[i].IsDead) then
+    begin
+      GameplayState.Players[i].Respawn := GameplayState.Players[i].Respawn - dt;
+    end;
   end;
 end;
 
 procedure Immortaldown(dt : integer);
 begin
-  if (GameplayState.Player1.IsImmortal) then
+  for var i:=1 to MaxPlayers do
   begin
-    GameplayState.Player1.Immortal := GameplayState.Player1.Immortal - dt;
-    if (GameplayState.Player1.Immortal <= 0) then
-      GameplayState.Player1.IsImmortal := false;
-  end;
-  if (GameplayState.Player2.IsImmortal) then
-  begin
-    GameplayState.Player2.Immortal := GameplayState.Player2.Immortal - dt;
-    if (GameplayState.Player2.Immortal <= 0) then
-      GameplayState.Player2.IsImmortal := false;
+    if (GameplayState.Players[i].IsImmortal) then
+    begin
+      GameplayState.Players[i].Immortal := GameplayState.Players[i].Immortal - dt;
+      if (GameplayState.Players[i].Immortal <= 0) then
+        GameplayState.Players[i].IsImmortal := false;
+    end;
   end;
 end;
 
@@ -228,12 +223,14 @@ begin
   end;
 end;
 
-procedure TryKillPlayer(var _player : Player);
+function TryKillPlayer(var _player : Player) : boolean;
 begin
+  TryKillPlayer := false;
   if (not _player.IsImmortal) then
   begin
     _player.Respawn := 2000;
     _player.IsDead := true;
+    TryKillPlayer := true;
   end;
 end;
 
@@ -245,7 +242,7 @@ begin
     if (IsCollide(player, GameplayState.Enemies[i]._col)) then
     begin
       CheckCollisionWithEnemy := true;
-      break;
+      exit;
     end;
   end;
 end;
@@ -258,7 +255,7 @@ begin
     if (IsCollide(entity, GameplayState.ColliderMap[i])) then
     begin
       CheckCollision:=true;
-      break;
+      exit;
     end;
   end;
 end;
@@ -273,7 +270,7 @@ begin
     GameplayState.BombMap[i].Pooled = true) then
     begin
       ContainsBomb := true;
-      break;
+      exit;
     end;
   end;
 end;
@@ -285,13 +282,13 @@ begin
     if (GameplayState.BombMap[i].Pooled = false) then
     begin
       GetFirstPooledBomb := i;
-      break;
+      exit;
     end;
     if (i = GameplayState.BombCount) then
     begin
       GetFirstPooledBomb := i + 1;
       GameplayState.BombCount := GameplayState.BombCount + 1;
-      break;
+      exit;
     end;
   end;
   if (GameplayState.BombCount = 0) then
@@ -354,14 +351,12 @@ begin
         end;
       end;
     end;
-    if ((CheckCollisionWithEnemy(movablePlayer._col)) and (not movablePlayer.IsImmortal)) then
+    if ((CheckCollisionWithEnemy(movablePlayer._col))) then
     begin
-      TryKillPlayer(movablePlayer);
-      if (movablePlayer.PlayerId = 1) then
-        GameplayState.Player1Score := GameplayState.Player1Score - 3
-      else 
-      if (movablePlayer.PlayerId = 2) then
-        GameplayState.Player2Score := GameplayState.Player2Score - 3;
+      if (TryKillPlayer(movablePlayer)) then
+      begin
+        movablePlayer.PlayerScore := movablePlayer.PlayerScore - 3;
+      end;
     end;
   end;
 end;
@@ -373,13 +368,13 @@ begin
     if (GameplayState.FireMap[i].Pooled = false) then
     begin
       GetFirstPooledFire := i;
-      break;
+      exit;
     end;
     if (i = GameplayState.FireCount) then
     begin
       GetFirstPooledFire := i + 1;
       GameplayState.FireCount := GameplayState.FireCount + 1;
-      break;
+      exit;
     end;
   end;
   if (GameplayState.FireCount = 0) then
@@ -402,11 +397,7 @@ begin
       if (not GameplayState.Enemies[i].IsDead) then
       begin
         BlowUpCell := true;
-        if (_fire.PlayerId = 1) then
-          GameplayState.Player1Score := GameplayState.Player1Score + 3
-        else
-        if (_fire.PlayerId = 2) then
-          GameplayState.Player2Score := GameplayState.Player2Score + 3;
+        GameplayState.Players[_fire.PlayerId].PlayerScore := GameplayState.Players[_fire.PlayerId].PlayerScore + 3;
         GameplayState.Enemies[i].IsDead := true;
         GameplayState.Enemies[i].Respawn := 3000;
         GameplayState.Enemies[i]._col.Pooled := false;
@@ -453,50 +444,29 @@ begin
         GameplayState.ColliderMap[GameplayState.BrickMap[i]._col.ColId].Pooled := false; 
         GameplayState.BrickMap[i].Pooled := false;
         
-        if (_fire.PlayerId = 1) then
-        begin
-          GameplayState.Player1Score := GameplayState.Player1Score + 1;
-        end 
-        else if (_fire.PlayerId = 2) then
-        begin
-          GameplayState.Player2Score := GameplayState.Player2Score + 1;
-        end;
-        break;
+        GameplayState.Players[_fire.PlayerId].PlayerScore := GameplayState.Players[_fire.PlayerId].PlayerScore + 1;
+        exit;
       end;
     end;
   end;
 
-  if ((((GameplayState.Player1._pos._x + 32) div 64 + 1) = _x) and 
-  (((GameplayState.Player1._pos._y + 32) div 64 + 1) = _y) and
-  not GameplayState.Player1.IsDead) then
+  for var i:=1 to MaxPlayers do
   begin
-    BlowUpCell := true;
-    
-    if (_fire.PlayerId = 2) then
+    if ((((GameplayState.Players[i]._pos._x + 32) div 64 + 1) = _x) and 
+    (((GameplayState.Players[i]._pos._y + 32) div 64 + 1) = _y) and
+    not GameplayState.Players[i].IsDead) then
     begin
-      GameplayState.Player2Score := GameplayState.Player2Score + 5;
+      BlowUpCell := true;
+      if (TryKillPlayer(GameplayState.Players[i])) then
+      begin
+        if (_fire.PlayerId <> GameplayState.Players[i].PlayerId) then
+        begin
+          GameplayState.Players[_fire.PlayerId].PlayerScore := GameplayState.Players[_fire.PlayerId].PlayerScore + 10;
+        end;
+        GameplayState.Players[i].PlayerScore := GameplayState.Players[i].PlayerScore - 3;
+      end;
     end;
-    
-    TryKillPlayer(GameplayState.Player1);
-    GameplayState.Player1Score := GameplayState.Player1Score - 3;
-    
   end;
-
-  if ((((GameplayState.Player2._pos._x + 32) div 64 + 1) = _x) and 
-  (((GameplayState.Player2._pos._y + 32) div 64 + 1) = _y) and
-  not GameplayState.Player2.IsDead) then
-  begin
-    BlowUpCell := true;
-    
-    if (_fire.PlayerId = 1) then
-    begin
-      GameplayState.Player1Score := GameplayState.Player1Score + 5;
-    end;
-    TryKillPlayer(GameplayState.Player2);
-    GameplayState.Player2Score := GameplayState.Player2Score - 3;
-    
-  end;
-  
 end;
 
 procedure ExplodeBomb(_bomb : Bomb; waveSize : word);
@@ -608,14 +578,7 @@ begin
       end;
       if (GameplayState.BombMap[i].IsAddable) then
       begin
-        if (GameplayState.BombMap[i].PlayerId = 1) then
-        begin
-          GameplayState.Player1.BombCount := GameplayState.Player1.BombCount + 1;
-        end
-        else
-        begin
-          GameplayState.Player2.BombCount := GameplayState.Player2.BombCount + 1;
-        end;
+        Inc(GameplayState.Players[GameplayState.BombMap[i].PlayerId].BombCount); 
         ExplodeBomb(GameplayState.BombMap[i], 2);
       end
       else
@@ -668,88 +631,91 @@ begin
   end;
 end;
 
-procedure InitPlayer(x, y, playerId : integer);
+function AreOtherDead(playerId : integer) : boolean;
+var
+  deadCount : integer;
 begin
-  if (playerId = 1) then
+  deadCount := 0;
+  for var i:=1 to MaxPlayers do
   begin
-    GameplayState.Player1._pos._x     := x;
-    GameplayState.Player1._pos._y     := y;
-    GameplayState.Player1._col._x     := x;
-    GameplayState.Player1._col._y     := y;
-    GameplayState.Player1.IsDead      := false;
-    GameplayState.Player1.Respawn     := 0;
-    GameplayState.Player1._col.Pooled := true;
-    GameplayState.Player1.IsImmortal  := true;
-    GameplayState.Player1.Immortal    := 1500;
+    if (GameplayState.Players[i].PlayerId <> playerId) then
+    begin
+      if (GameplayState.Players[i].IsDead) then
+        Inc(deadCount);
+    end;
   end;
-  if (playerId = 2) then
+  if (deadCount = (MaxPlayers - 1)) then
+    AreOtherDead := true
+  else
+    AreOtherDead := false;
+end;
+
+procedure GetDangerousPoint(var x, y : integer; playerId : integer);
+var
+  n : integer;
+begin
+  x := 0;
+  y := 0;
+  n := 0;
+  for var i:=1 to MaxPlayers do
   begin
-    GameplayState.Player2._pos._x     := x;
-    GameplayState.Player2._pos._y     := y;
-    GameplayState.Player2._col._x     := x;
-    GameplayState.Player2._col._y     := y;
-    GameplayState.Player2.IsDead      := false;
-    GameplayState.Player2.Respawn     := 0;
-    GameplayState.Player2._col.Pooled := true;
-    GameplayState.Player2.IsImmortal  := true;
-    GameplayState.Player2.Immortal    := 1500;
+    if (GameplayState.Players[i].PlayerId <> playerId) then
+    begin
+      if (not GameplayState.Players[i].IsDead) then
+      begin
+        Inc(n);
+        x += GameplayState.Players[i]._pos._x;
+        y += GameplayState.Players[i]._pos._y;
+      end;
+    end;
   end;
+  for var i:=1 to 6 do
+  begin
+    if (not GameplayState.Enemies[i].IsDead) then
+    begin
+      Inc(n);
+      x += GameplayState.Enemies[i]._pos._x;
+      y += GameplayState.Enemies[i]._pos._y;
+    end;
+  end;
+  x := Round(x / n);
+  y := Round(y / n);
 end;
 
 procedure SpawnPlayer(var _player : Player);
 begin
-  var trans : Transform;
-  if (_player.PlayerId = 1) then
+  var trans, dang : Transform;
+  if (AreOtherDead(_player.PlayerId)) then
   begin
-    if (GameplayState.Player2.IsDead) then
-    begin
-      trans := GameplayState.SpawnPoints[Random(1, GameplayState.SpawnCount)];
-    end
-    else
-    begin
-      var max := sqrt(sqr(GameplayState.Player2._pos._x - GameplayState.SpawnPoints[1]._x) +
-      sqr(GameplayState.Player2._pos._y - GameplayState.SpawnPoints[1]._y));
-      var id := 1;
-      for var i:=2 to GameplayState.SpawnCount do
-      begin
-        if (max < sqrt(sqr(GameplayState.Player2._pos._x - GameplayState.SpawnPoints[i]._x) +
-        sqr(GameplayState.Player2._pos._y - GameplayState.SpawnPoints[i]._y))) then
-        begin
-          max := sqrt(sqr(GameplayState.Player2._pos._x - GameplayState.SpawnPoints[i]._x) +
-                 sqr(GameplayState.Player2._pos._y - GameplayState.SpawnPoints[i]._y));
-          id := i;
-        end;
-      end;
-      trans := GameplayState.SpawnPoints[id];
-    end;
-    InitPlayer(trans._x, trans._y, 1);
-  end;
-  
-  if (_player.PlayerId = 2) then
+    trans := GameplayState.SpawnPoints[Random(1, GameplayState.SpawnCount)];
+  end
+  else
   begin
-    if (GameplayState.Player1.IsDead) then
+    GetDangerousPoint(dang._x, dang._y, _player.PlayerId);
+    var max := sqrt(sqr(dang._x - GameplayState.SpawnPoints[1]._x) +
+    sqr(dang._y - GameplayState.SpawnPoints[1]._y));
+    var id := 1;
+    for var i:=2 to GameplayState.SpawnCount do
     begin
-      trans := GameplayState.SpawnPoints[Random(4) + 1];
-    end
-    else
-    begin
-      var max := sqrt(sqr(GameplayState.Player1._pos._x - GameplayState.SpawnPoints[1]._x) +
-      sqr(GameplayState.Player1._pos._y - GameplayState.SpawnPoints[1]._y));
-      var id := 1;
-      for var i:=2 to GameplayState.SpawnCount do
+      if (max < sqrt(sqr(dang._x - GameplayState.SpawnPoints[i]._x) +
+      sqr(dang._y - GameplayState.SpawnPoints[i]._y))) then
       begin
-        if (max < sqrt(sqr(GameplayState.Player1._pos._x - GameplayState.SpawnPoints[i]._x) +
-        sqr(GameplayState.Player1._pos._y - GameplayState.SpawnPoints[i]._y))) then
-        begin
-          max := sqrt(sqr(GameplayState.Player1._pos._x - GameplayState.SpawnPoints[i]._x) +
-                 sqr(GameplayState.Player1._pos._y - GameplayState.SpawnPoints[i]._y));
-          id := i;
-        end;
+        max := sqrt(sqr(dang._x - GameplayState.SpawnPoints[i]._x) +
+               sqr(dang._y - GameplayState.SpawnPoints[i]._y));
+        id := i;
       end;
-      trans := GameplayState.SpawnPoints[id];
     end;
-    InitPlayer(trans._x, trans._y, 2);
+    trans := GameplayState.SpawnPoints[id];
   end;
+  _player._pos._x := trans._x;
+  _player._pos._y := trans._y;
+  _player._col._x := trans._x;
+  _player._col._y := trans._y;
+  _player._col.Pooled := true;
+  _player.IsDead := false;
+  _player.Respawn := 0;
+  _player.IsImmortal := true;
+  _player.Immortal := 1500;
 end;
 
 procedure SpawnEnemy(var _enemy : Enemy; x, y:integer);
@@ -883,13 +849,12 @@ end;
 
 procedure UpdateRespawn(dt : integer);
 begin
-  if ((GameplayState.Player1.Respawn <= 0) and (GameplayState.Player1.IsDead)) then
+  for var i:=1 to MaxPlayers do
   begin
-    SpawnPlayer(GameplayState.Player1);
-  end;
-  if ((GameplayState.Player2.Respawn <= 0) and (GameplayState.Player2.IsDead)) then
-  begin
-    SpawnPlayer(GameplayState.Player2);
+    if ((GameplayState.Players[i].Respawn <= 0) and (GameplayState.Players[i].IsDead)) then
+    begin
+      SpawnPlayer(GameplayState.Players[i]);
+    end;
   end;
 end;
 
@@ -1140,50 +1105,43 @@ end;
 
 procedure InitMainGame();
 begin
-  //Player 1
   with GameplayState do
   begin
-    Player1._pos._x           := 0;
-    Player1._pos._y           := 0;
-    Player1._col._x           := 0;
-    Player1._col._y           := 0;
-    Player1._col._h           := 52;
-    Player1._col._w           := 32;
-    Player1._col._offsetX     := 16;
-    Player1._col._offsetY     := 6;
-    Player1._col.Pooled       := false;
-    Player1.Speed             := 125;
-    Player1.Down              := VK_S;
-    Player1.Up                := VK_W;
-    Player1.Left              := VK_A;
-    Player1.Right             := VK_D;
-    Player1.Place             := VK_G;
-    Player1.PlayerId          := 1;
-    Player1.IsDead            := true;
-    Player1.Respawn           := 0;
-    Player1.Name              := Player1Name;
-    Player1.BombCount         := 3;
-    //Player 2
-    Player2._pos._x           := 0;
-    Player2._pos._y           := 0;
-    Player2._col._x           := 0;
-    Player2._col._y           := 0;
-    Player2._col._h           := 52;
-    Player2._col._w           := 32;
-    Player2._col._offsetX     := 16;
-    Player2._col._offsetY     := 6;
-    Player2._col.Pooled       := true;
-    Player2.Speed             := 125;
-    Player2.Down              := VK_DOWN;
-    Player2.Up                := VK_UP;
-    Player2.Left              := VK_LEFT;
-    Player2.Right             := VK_RIGHT;
-    Player2.Place             := VK_L;
-    Player2.PlayerId          := 2;
-    Player2.IsDead            := true;
-    Player2.Respawn           := 0;
-    Player2.Name              := Player2Name;
-    Player2.BombCount         := 3;
+    for var i:=1 to MaxPlayers do
+    begin
+      Players[i]._pos._x       := 0;
+      Players[i]._pos._y       := 0;
+      Players[i]._col._x       := 0;
+      Players[i]._col._y       := 0;
+      Players[i]._col._h       := 52;
+      Players[i]._col._w       := 32;
+      Players[i]._col._offsetX := 16;
+      Players[i]._col._offsetX := 6;
+      Players[i]._col.Pooled   := false;
+      Players[i].PlayerId      := i;
+      Players[i].IsDead        := true;
+      Players[i].Respawn       := 0;
+      Players[i].BombCount     := 3;
+      Players[i].Name          := PlayerNames[i];
+      Players[i].Speed         := 125;
+      Players[i].PlayerScore   := 0;
+      if (i = 1) then
+      begin
+        Players[i].Down        := VK_S;
+        Players[i].Up          := VK_W;
+        Players[i].Left        := VK_A;
+        Players[i].Right       := VK_D;
+        Players[i].Place       := VK_G;
+      end;
+      if (i = 2) then
+      begin
+        Players[i].Down        := VK_DOWN;
+        Players[i].Up          := VK_UP;
+        Players[i].Left        := VK_LEFT;
+        Players[i].Right       := VK_RIGHT;
+        Players[i].Place       := VK_L;
+      end;
+    end;
     //Map
     CurrentMap                := _CurrentMap;
     LoadMap(CurrentMap + '.txt');
@@ -1200,10 +1158,6 @@ begin
     end;
   end;
   FillMap();
-  
-  //Init 
-  GameplayState.Player1Score := 0;
-  GameplayState.Player2Score := 0;
   
   MainTime := 120000;
   IsPause := false;
@@ -1295,8 +1249,10 @@ begin
   HandleInputInMainGame();
   if (not IsPause) then
   begin
-    MovePlayer(GameplayState.Player1, dt);
-    MovePlayer(GameplayState.Player2, dt);
+    for var i:=1 to MaxPlayers do
+    begin
+      MovePlayer(GameplayState.Players[i], dt);
+    end;
     UpdateEnemy(dt);
     Countdown(dt);
     Bombdown(dt);
@@ -1310,8 +1266,10 @@ begin
   end;
   if ((MainTime < 0)) then
   begin
-    Player1Score := GameplayState.Player1Score;
-    Player2Score := GameplayState.Player2Score;
+    for var i:=1 to MaxPlayers do
+    begin
+      PlayerScores[i] := GameplayState.Players[i].PlayerScore;
+    end;
     ChangeState(EndHighState);
   end;
 end;
@@ -1326,13 +1284,12 @@ begin
   RenderBombs();
   RenderEnemies();
 
-  if (not GameplayState.Player1.IsDead) then
+  for var i:=1 to MaxPlayers do
   begin
-    RenderPlayer(GameplayState.Player1._pos._x, GameplayState.Player1._pos._y, 0, TopOffset, GameplayState.Player1.PlayerId, GameplayState.Player1.Name);
-  end;
-  if (not GameplayState.Player2.IsDead) then
-  begin
-    RenderPlayer(GameplayState.Player2._pos._x, GameplayState.Player2._pos._y, 0, TopOffset, GameplayState.Player2.PlayerId, GameplayState.Player2.Name);
+    if (not GameplayState.Players[i].IsDead) then
+    begin
+      RenderPlayer(GameplayState.Players[i]._pos._x, GameplayState.Players[i]._pos._y, 0, TopOffset, GameplayState.Players[i].PlayerId, GameplayState.Players[i].Name);
+    end;
   end;
   
   SetBrushStyle(bsSolid);
@@ -1346,8 +1303,8 @@ begin
   var TimeString := (MainTime div 1000) div 60 + ':' + (MainTime div 1000) mod 60;
   TextOut(WindowWidth div 2 - 96, 8, 'Осталось времени');
   TextOut(WindowWidth div 2 - 32, 32, TimeString);
-  TextOut(16, 26, GameplayState.Player1.Name + ' Score: ' + GameplayState.Player1Score);
-  TextOut(WindowWidth - 164, 26, GameplayState.Player2.Name + ' Score: ' + GameplayState.Player2Score);
+  TextOut(16, 26, GameplayState.Players[1].Name + ' Score: ' + GameplayState.Players[1].PlayerScore);
+  TextOut(WindowWidth - 164, 26, GameplayState.Players[2].Name + ' Score: ' + GameplayState.Players[2].PlayerScore);
   
   //Pause
   if (IsPause) then
