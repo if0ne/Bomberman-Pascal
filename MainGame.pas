@@ -298,6 +298,29 @@ begin
   end;
 end;
 
+procedure CreateBomb(x, y : integer; playerId : word; byPlayer : boolean);
+begin
+  var _x := (x + 32) div 64 * 64;
+  var _y := (y + 32) div 64 * 64;
+  var temp : Bomb;
+  temp._pos._x := _x;
+  temp._pos._y := _y;
+  temp._col._h := 64;
+  temp._col._w := 64;
+  temp._col._x := _x;
+  temp._col._y := _y;
+  temp.Pooled := true;
+  temp.IsAddable := byPlayer;
+  temp.Time := 3000;
+  temp.PlayerId := playerId;
+  if (not ContainsBomb(temp)) then
+  begin
+    Dec(GameplayState.Players[playerId].BombCount);
+    var index := GetFirstPooledBomb();
+    GameplayState.BombMap[index] := temp;
+  end;
+end;
+
 procedure MovePlayer(var movablePlayer : Player; dt : integer);
 begin
   if (not movablePlayer.IsDead) then
@@ -330,25 +353,7 @@ begin
     begin
       if (movablePlayer.BombCount > 0) then
       begin
-        var x := (movablePlayer._pos._x + 32) div 64 * 64;
-        var y := (movablePlayer._pos._y + 32) div 64 * 64;
-        var temp : Bomb;
-        temp._pos._x := x;
-        temp._pos._y := y;
-        temp._col._h := 64;
-        temp._col._w := 64;
-        temp._col._x := x;
-        temp._col._y := y;
-        temp.Pooled := true;
-        temp.IsAddable := true;
-        temp.Time := 3000;
-        temp.PlayerId := movablePlayer.PlayerId;
-        if (not ContainsBomb(temp)) then
-        begin
-          movablePlayer.BombCount := movablePlayer.BombCount - 1;
-          var index := GetFirstPooledBomb();
-          GameplayState.BombMap[index] := temp;
-        end;
+        CreateBomb(movablePlayer._pos._x, movablePlayer._pos._y, movablePlayer.PlayerId, true);
       end;
     end;
     if ((CheckCollisionWithEnemy(movablePlayer._col))) then
@@ -384,6 +389,37 @@ begin
   end;
 end;
 
+function CreateFire(x, y, nx, ny : integer; playerId : word) : Fire;
+begin
+  var _x := x div 64;
+  var _y := y div 64;
+  var _fire : Fire;
+  _fire._pos._x := (_x + nx) * 64;
+  _fire._pos._y := (_y + ny) * 64;
+  _fire.PlayerId := playerId;
+  _fire.Pooled := true;
+  _fire.Time := 300;
+  var _index := GetFirstPooledFire();
+  GameplayState.FireMap[_index] := _fire;
+  CreateFire := _fire;
+end;
+
+function CreateCollider(x, y, offsetX, offsetY, h, w : integer; isPooled : boolean) : Collider;
+begin
+  var temp : Collider;
+  temp._x := x;
+  temp._y := y;
+  temp._offsetX := offsetX;
+  temp._offsetY := offsetY;
+  temp._h := h;
+  temp._w := w;
+  temp.Pooled := isPooled;
+  Inc(GameplayState.colCount);
+  temp.ColId := GameplayState.colCount;
+  GameplayState.ColliderMap[GameplayState.colCount] := temp;
+  CreateCollider := temp;
+end;
+
 function BlowUpCell(_fire : Fire) : boolean;
 begin
   var _x := _fire._pos._x div 64 + 1;
@@ -403,24 +439,7 @@ begin
         GameplayState.Enemies[i]._col.Pooled := false;
         if (GameplayState.Enemies[i].EnemyType = BlowupEnemy) then
         begin
-          var x := (GameplayState.Enemies[i]._pos._x + 32) div 64 * 64;
-          var y := (GameplayState.Enemies[i]._pos._y + 32) div 64 * 64;
-          var temp : Bomb;
-          temp._pos._x := x;
-          temp._pos._y := y;
-          temp._col._h := 64;
-          temp._col._w := 64;
-          temp._col._x := x;
-          temp._col._y := y;
-          temp.Pooled := true;
-          temp.IsAddable := false;
-          temp.Time := 0;
-          temp.PlayerId := _fire.PlayerId;
-          if (not ContainsBomb(temp)) then
-          begin
-            var index := GetFirstPooledBomb();
-            GameplayState.BombMap[index] := temp;
-          end;
+          CreateBomb(GameplayState.Enemies[i]._pos._x, GameplayState.Enemies[i]._pos._y, _fire.PlayerId, false);
         end;
       end;
     end;
@@ -471,30 +490,13 @@ end;
 
 procedure ExplodeBomb(_bomb : Bomb; waveSize : word);
 begin
-  var _x := _bomb._pos._x div 64;
-  var _y := _bomb._pos._y div 64;
-  //To Up
-  var center : Fire;
-  center._pos._y := _y * 64;
-  center._pos._x := _x * 64;
-  center.PlayerId := _bomb.PlayerId;
-  center.Pooled := true;
-  center.Time   := 300;
-  var _index := GetFirstPooledFire();
-  GameplayState.FireMap[_index] := center;
+  var center := CreateFire(_bomb._pos._x, _bomb._pos._y, 0, 0, _bomb.PlayerId);
   if (not BlowUpCell(center)) then
   begin
     //To Up
     for var i:=1 to waveSize do
     begin
-      var temp : Fire;
-      temp._pos._y := (_y - i) * 64;
-      temp._pos._x := _x * 64;
-      temp.PlayerId := _bomb.PlayerId;
-      temp.Pooled := true;
-      temp.Time   := 300;
-      var index := GetFirstPooledFire();
-      GameplayState.FireMap[index] := temp;
+      var temp := CreateFire(_bomb._pos._x, _bomb._pos._y, 0, -i, _bomb.PlayerId);
       if (BlowUpCell(temp)) then
       begin
         break;
@@ -503,14 +505,7 @@ begin
     //To Down
     for var i:=1 to waveSize do
     begin
-      var temp : Fire;
-      temp._pos._y := (_y + i) * 64;
-      temp._pos._x := _x * 64;
-      temp.PlayerId := _bomb.PlayerId;
-      temp.Pooled := true;
-      temp.Time   := 300;
-      var index := GetFirstPooledFire();
-      GameplayState.FireMap[index] := temp;
+      var temp := CreateFire(_bomb._pos._x, _bomb._pos._y, 0, i, _bomb.PlayerId);
       if (BlowUpCell(temp)) then
       begin
         break;
@@ -519,14 +514,7 @@ begin
     //To Left
     for var i:=1 to waveSize do
     begin
-      var temp : Fire;
-      temp._pos._y := _y * 64;
-      temp._pos._x :=(_x - i) * 64;
-      temp.PlayerId := _bomb.PlayerId;
-      temp.Pooled := true;
-      temp.Time   := 300;
-      var index := GetFirstPooledFire();
-      GameplayState.FireMap[index] := temp;
+      var temp := CreateFire(_bomb._pos._x, _bomb._pos._y, -i, 0, _bomb.PlayerId);
       if (BlowUpCell(temp)) then
       begin
         break;
@@ -535,14 +523,7 @@ begin
     //To Right
     for var i:=1 to waveSize do
     begin
-      var temp : Fire;
-      temp._pos._y := _y * 64;
-      temp._pos._x := (_x + i) * 64;
-      temp.PlayerId := _bomb.PlayerId;
-      temp.Pooled := true;
-      temp.Time   := 300;
-      var index := GetFirstPooledFire();
-      GameplayState.FireMap[index] := temp;
+      var temp := CreateFire(_bomb._pos._x, _bomb._pos._y, i, 0, _bomb.PlayerId);
       if (BlowUpCell(temp)) then
       begin
         break;
@@ -1061,16 +1042,7 @@ begin
         end;
         1:
         begin
-          var temp : Collider;
-          temp._x := (columns - 1) * 64;
-          temp._y := (rows - 1) * 64;
-          temp._h := 64;
-          temp._w := 64;
-          temp.Pooled := true;
-          GameplayState.colCount := GameplayState.colCount + 1;
-          temp.ColId := GameplayState.colCount;
-          GameplayState.ColliderMap[GameplayState.colCount] := temp;
-          
+          var temp := CreateCollider((columns - 1) * 64, (rows - 1) * 64, 0, 0, 64, 64, true);  
           var _iron : Iron;
           _iron._col := GameplayState.ColliderMap[GameplayState.colCount];
           _iron._pos._x := temp._x;
@@ -1080,16 +1052,7 @@ begin
         end;
         2:
         begin
-          var temp : Collider;
-          temp._x := (columns - 1) * 64;
-          temp._y := (rows - 1) * 64;
-          temp._h := 64;
-          temp._w := 64;
-          temp.Pooled := true;
-          GameplayState.colCount := GameplayState.colCount + 1;
-          temp.ColId := GameplayState.colCount;
-          GameplayState.ColliderMap[GameplayState.colCount] := temp;
-          
+          var temp := CreateCollider((columns - 1) * 64, (rows - 1) * 64, 0, 0, 64, 64, true);  
           var _brick : Brick;
           _brick._col := GameplayState.ColliderMap[GameplayState.colCount];
           _brick._pos._x := temp._x;
@@ -1111,13 +1074,7 @@ begin
     begin
       Players[i]._pos._x       := 0;
       Players[i]._pos._y       := 0;
-      Players[i]._col._x       := 0;
-      Players[i]._col._y       := 0;
-      Players[i]._col._h       := 52;
-      Players[i]._col._w       := 32;
-      Players[i]._col._offsetX := 16;
-      Players[i]._col._offsetX := 6;
-      Players[i]._col.Pooled   := false;
+      Players[i]._col          := CreateCollider(0, 0, 16, 6, 52, 32, false);
       Players[i].PlayerId      := i;
       Players[i].IsDead        := true;
       Players[i].Respawn       := 0;
