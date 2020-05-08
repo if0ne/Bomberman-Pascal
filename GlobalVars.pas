@@ -49,26 +49,6 @@ uses
 procedure DisposeState;
 begin
   case state of
-    MenuState :
-    begin
-      DisposeMenu();
-    end;
-    HelpState :
-    begin
-      DisposeHelp();
-    end;
-    HighscoreState:
-    begin
-      DisposeHighscore();
-    end;
-    ChooseMapState :
-    begin
-      DisposeMapMenu();
-    end;
-    InputNamesState :
-    begin
-      DisposeInputNames();
-    end;
     MainGameState :
     begin
       DisposeMainGame();
@@ -76,10 +56,6 @@ begin
     EndHighState :
     begin
       DisposeNewHighscore();
-    end;
-    EditorState :
-    begin
-      DisposeEditor();
     end;
   end;
 end;

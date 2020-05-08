@@ -223,6 +223,22 @@ begin
   end;
 end;
 
+function CreateCollider(x, y, offsetX, offsetY, h, w : integer; isPooled : boolean) : Collider;
+begin
+  var temp : Collider;
+  temp._x := x;
+  temp._y := y;
+  temp._offsetX := offsetX;
+  temp._offsetY := offsetY;
+  temp._h := h;
+  temp._w := w;
+  temp.Pooled := isPooled;
+  Inc(GameplayState.colCount);
+  temp.ColId := GameplayState.colCount;
+  GameplayState.ColliderMap[GameplayState.colCount] := temp;
+  CreateCollider := temp;
+end;
+
 function TryKillPlayer(var _player : Player) : boolean;
 begin
   TryKillPlayer := false;
@@ -298,7 +314,7 @@ begin
   end;
 end;
 
-procedure CreateBomb(x, y : integer; playerId : word; byPlayer : boolean);
+procedure CreateBomb(x, y : integer; playerId : word; byPlayer : boolean; time : integer);
 begin
   var _x := (x + 32) div 64 * 64;
   var _y := (y + 32) div 64 * 64;
@@ -311,7 +327,7 @@ begin
   temp._col._y := _y;
   temp.Pooled := true;
   temp.IsAddable := byPlayer;
-  temp.Time := 3000;
+  temp.Time := time;
   temp.PlayerId := playerId;
   if (not ContainsBomb(temp)) then
   begin
@@ -353,7 +369,7 @@ begin
     begin
       if (movablePlayer.BombCount > 0) then
       begin
-        CreateBomb(movablePlayer._pos._x, movablePlayer._pos._y, movablePlayer.PlayerId, true);
+        CreateBomb(movablePlayer._pos._x, movablePlayer._pos._y, movablePlayer.PlayerId, true, 3000);
       end;
     end;
     if ((CheckCollisionWithEnemy(movablePlayer._col))) then
@@ -404,22 +420,6 @@ begin
   CreateFire := _fire;
 end;
 
-function CreateCollider(x, y, offsetX, offsetY, h, w : integer; isPooled : boolean) : Collider;
-begin
-  var temp : Collider;
-  temp._x := x;
-  temp._y := y;
-  temp._offsetX := offsetX;
-  temp._offsetY := offsetY;
-  temp._h := h;
-  temp._w := w;
-  temp.Pooled := isPooled;
-  Inc(GameplayState.colCount);
-  temp.ColId := GameplayState.colCount;
-  GameplayState.ColliderMap[GameplayState.colCount] := temp;
-  CreateCollider := temp;
-end;
-
 function BlowUpCell(_fire : Fire) : boolean;
 begin
   var _x := _fire._pos._x div 64 + 1;
@@ -439,7 +439,7 @@ begin
         GameplayState.Enemies[i]._col.Pooled := false;
         if (GameplayState.Enemies[i].EnemyType = BlowupEnemy) then
         begin
-          CreateBomb(GameplayState.Enemies[i]._pos._x, GameplayState.Enemies[i]._pos._y, _fire.PlayerId, false);
+          CreateBomb(GameplayState.Enemies[i]._pos._x, GameplayState.Enemies[i]._pos._y, _fire.PlayerId, false, 20);
         end;
       end;
     end;
@@ -448,6 +448,7 @@ begin
   if (GameplayState.Map[_y, _x] = 1) then
   begin
     BlowUpCell := true;
+    exit;
   end
   else
   if (GameplayState.Map[_y, _x] = 2) then
@@ -557,15 +558,20 @@ begin
       begin
         GameplayState.BombMap[i].Pooled := false;
       end;
+      
+      Inc(GameplayState.Players[GameplayState.BombMap[i].PlayerId].BombCount);
+      if (GameplayState.Players[GameplayState.BombMap[i].PlayerId].BombCount > 3) then
+        GameplayState.Players[GameplayState.BombMap[i].PlayerId].BombCount := 3;
+      
       if (GameplayState.BombMap[i].IsAddable) then
       begin
-        Inc(GameplayState.Players[GameplayState.BombMap[i].PlayerId].BombCount); 
         ExplodeBomb(GameplayState.BombMap[i], 2);
       end
       else
       begin
         ExplodeBomb(GameplayState.BombMap[i], 1);
       end;
+      
     end;
   end;
 end;
@@ -705,10 +711,10 @@ begin
   begin
     _col._x := x;
     _col._y := y;
-    _col._h := 48;
-    _col._w := 48;
-    _col._offsetX := 8;
-    _col._offsetY := 8;
+    _col._h := 32;
+    _col._w := 32;
+    _col._offsetX := 16;
+    _col._offsetY := 16;
     _col.Pooled := true;
     _pos._x := x;
     _pos._y := y;
@@ -986,6 +992,29 @@ begin
   end;
 end;
 
+procedure RenderPlayers();
+begin
+  for var i:=1 to MaxPlayers do
+  begin
+    if (not GameplayState.Players[i].IsDead) then
+    begin
+      RenderPlayer(GameplayState.Players[i]._pos._x, GameplayState.Players[i]._pos._y, 0, TopOffset, GameplayState.Players[i].PlayerId, GameplayState.Players[i].Name);
+      if (GameplayState.Players[i].IsImmortal) then
+      begin
+        RenderShield(GameplayState.Players[i]._pos._x, GameplayState.Players[i]._pos._y, 0, TopOffset);
+      end;
+    end;
+  end;
+end;
+
+procedure RenderPortals();
+begin
+  for var i:=1 to GameplayState.SpawnCountEnemy do
+  begin
+    RenderEnemySpawner(GameplayState.SpawnEnemies[i]._x, GameplayState.SpawnEnemies[i]._y, 0, TopOffset);
+  end;
+end;
+
 procedure LoadMap(filename : string);
 begin
   var textFile : Text;
@@ -1065,6 +1094,8 @@ begin
     end;
   end;
 end;
+
+////////////////////////////////////////////////
 
 procedure InitMainGame();
 begin
@@ -1236,18 +1267,13 @@ begin
   Window.Clear();
   SetBrushStyle(bsSolid);
   RenderGround();
+  RenderPortals();
   RenderIrons();
   RenderBricks();
   RenderBombs();
   RenderEnemies();
-
-  for var i:=1 to MaxPlayers do
-  begin
-    if (not GameplayState.Players[i].IsDead) then
-    begin
-      RenderPlayer(GameplayState.Players[i]._pos._x, GameplayState.Players[i]._pos._y, 0, TopOffset, GameplayState.Players[i].PlayerId, GameplayState.Players[i].Name);
-    end;
-  end;
+  RenderPlayers();
+ 
   
   SetBrushStyle(bsSolid);
   RenderFires();
@@ -1261,8 +1287,16 @@ begin
   TextOut(WindowWidth div 2 - 96, 8, 'Осталось времени');
   TextOut(WindowWidth div 2 - 32, 32, TimeString);
   TextOut(16, 26, GameplayState.Players[1].Name + ' Score: ' + GameplayState.Players[1].PlayerScore);
-  TextOut(WindowWidth - 164, 26, GameplayState.Players[2].Name + ' Score: ' + GameplayState.Players[2].PlayerScore);
-  
+  for var i:=1 to GameplayState.Players[1].BombCount do
+  begin
+    RenderBombIcon(224 + 28 * i, 20, 0, 0);
+  end;
+  for var i:= 1 to GameplayState.Players[2].BombCount do
+  begin
+    RenderBombIcon(WindowWidth - 274 - 28 * i, 20, 0, 0);
+  end;
+  TextOut(WindowWidth - 256, 26, GameplayState.Players[2].Name + ' Score: ' + GameplayState.Players[2].PlayerScore);
+
   //Pause
   if (IsPause) then
   begin

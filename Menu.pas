@@ -6,7 +6,6 @@ procedure InitMenu();
 procedure HandleInputInMenu();
 procedure UpdateMenu(dt : integer);
 procedure RenderMenu();
-procedure DisposeMenu();
 
 implementation
 
@@ -127,11 +126,6 @@ begin
     //Constants: 322 - Смещение сверху, высчитано из макета, 94 - размер кнопки + расстояние между ними (84 + 10)
     DrawButton(Window.Width div 2, 322 + 94 * (i - 1), Options[i], defaultSize, isActive);
   end;
-end;
-
-procedure DisposeMenu;
-begin
-  
 end;
 
 begin

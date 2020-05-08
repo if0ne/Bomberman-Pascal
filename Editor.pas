@@ -6,7 +6,6 @@ procedure InitEditor();
 procedure HandleInputInEditor();
 procedure UpdateEditor(dt : integer);
 procedure RenderEditor();
-procedure DisposeEditor();
 
 implementation
 
@@ -36,6 +35,7 @@ var
   CurrentX : integer;
   CurrentY : integer;
   CurrentBlock : word;
+  CurrentUIBlock : word;
   CurrentState : word;
   
   MapName  : string;
@@ -43,28 +43,6 @@ var
   Problems : array[1..5] of string;
   CountProblem : integer;
   
-procedure InitEditor;
-begin
-  MapName:='';
-  CountProblem:=0;
-  EditModeState.MapX := 15;
-  EditModeState.MapY := 11;
-  CurrentX := 2;
-  CurrentY := 2;
-  CurrentBlock := 0;
-  CurrentState := EditState;
-  for var i:=1 to EditModeState.MapY do
-  begin
-    for var j:=1 to EditModeState.MapX do
-    begin
-      if ((i = 1) or (j = 1) or (i = EditModeState.MapY) or (j = EditModeState.MapX)) then
-        EditModeState.Map[i, j] := 1
-      else
-        EditModeState.Map[i, j] := 0;
-    end;
-  end;
-end;
-
 procedure ChangeMapName(var _mapName : string);
 begin
   if (LastChar = VK_BACK) then
@@ -281,6 +259,31 @@ begin
   begin
     RightMap := false;
   end;
+end;  
+
+////////////////////////////////////////
+  
+procedure InitEditor;
+begin
+  MapName:='';
+  CountProblem:=0;
+  EditModeState.MapX := 15;
+  EditModeState.MapY := 11;
+  CurrentX := 2;
+  CurrentY := 2;
+  CurrentBlock := 0;
+  CurrentUIBlock := 1;
+  CurrentState := EditState;
+  for var i:=1 to EditModeState.MapY do
+  begin
+    for var j:=1 to EditModeState.MapX do
+    begin
+      if ((i = 1) or (j = 1) or (i = EditModeState.MapY) or (j = EditModeState.MapX)) then
+        EditModeState.Map[i, j] := 1
+      else
+        EditModeState.Map[i, j] := 0;
+    end;
+  end;
 end;
 
 procedure HandleInputInSaveState();
@@ -339,15 +342,30 @@ end;
 procedure HandleInputInEditState();
 begin
   if (inputKeys[VK_NumPad1 - 48]) then
+  begin
     CurrentBlock := 0;
+    CurrentUIBlock := 1;
+  end;
   if (inputKeys[VK_NumPad2 - 48]) then
+  begin
     CurrentBlock := 1;
+    CurrentUIBlock := 2;
+  end;
   if (inputKeys[VK_NumPad3 - 48]) then
+  begin
     CurrentBlock := 2;
+    CurrentUIBlock := 3;
+  end;
   if (inputKeys[VK_NumPad4 - 48]) then
+  begin
     CurrentBlock := 4;
+    CurrentUIBlock := 4;
+  end;
   if (inputKeys[VK_NumPad5 - 48]) then
+  begin
     CurrentBlock := 5;
+    CurrentUIBlock := 5;
+  end;
   
   if (inputKeys[VK_DOWN] or inputKeys[VK_S]) then
   begin
@@ -468,33 +486,21 @@ begin
   SetFontSize(26);
   TextOut(4, 16, 'Выбрано: ');
   
-  case CurrentBlock of
-    0:
-    begin
-      RenderGrassBlock(160, 0, 0, 0);
-    end;
-    1:
-    begin
-      RenderIron(160, 0, 0, 0);
-    end;
-    2:
-    begin
-      RenderBrick(160, 0, 0, 0);
-    end;
-    4:
-    begin
-      RenderEnemySpawner(160, 0, 0, 0);
-    end;
-    5:
-    begin
-      RenderPlayerSpawner(160, 0, 0, 0);
-    end;
-  end;
+  RenderGrassBlock(160, 0, 0, 0);
+  DrawTextCentered(160 + 32, 32, '1');
+  RenderIron(160 + 1 * 74, 0, 0, 0);
+  DrawTextCentered(160 + 32 + 1 * 74, 32, '2');
+  RenderBrick(160 + 2 * 74, 0, 0, 0);
+  DrawTextCentered(160 + 32 + 2 * 74, 32, '3');
+  RenderEnemySpawner(160 + 3 * 74, 0, 0, 0);
+  DrawTextCentered(160 + 32 + 3 * 74, 32, '4');
+  RenderPlayerSpawner(160 + 4 * 74, 0, 0, 0);
+  DrawTextCentered(160 + 32 + 4 * 74, 32, '5');
   
   SetBrushStyle(bsClear);
   SetPenColor(clBlue);
   SetPenWidth(5);
-  Rectangle(160, 0, 160 + 64, 64);
+  Rectangle(160 + (CurrentUIBlock - 1) * 74, 0, 160 + (CurrentUIBlock - 1) * 74 + 64, 64);
 end;
 
 procedure RenderInSaveMode();
@@ -523,11 +529,6 @@ begin
     SaveState :
       RenderInSaveMode();
   end;
-end;
-
-procedure DisposeEditor;
-begin
-
 end;
 
 begin

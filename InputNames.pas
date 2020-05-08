@@ -6,7 +6,6 @@ procedure InitInputNames();
 procedure HandleInputInInputNames();
 procedure UpdateInputNames(dt : integer);
 procedure RenderInputNames();
-procedure DisposeInputNames();
 
 implementation
 
@@ -23,18 +22,6 @@ var
   
   Problems : array[1..5] of string;
   CountProblem : integer;
-
-procedure InitInputNames;
-begin
-  CurrentOp := 1;
-  for var i:=1 to MaxPlayers do
-  begin
-    Options[i] := 'Имя игрока ' + i + ':';
-    InputPlayerNames[i] := '';
-  end;
-  Options[MaxPlayers + 1] := 'Назад';
-  CountProblem := 0;
-end;
 
 procedure TryToChangeState();
 begin
@@ -84,6 +71,20 @@ begin
       nick := nick + Chr(LastChar);
     end;
   end;
+end;
+
+//////////////////////////////////////
+
+procedure InitInputNames;
+begin
+  CurrentOp := 1;
+  for var i:=1 to MaxPlayers do
+  begin
+    Options[i] := 'Имя игрока ' + i + ':';
+    InputPlayerNames[i] := '';
+  end;
+  Options[MaxPlayers + 1] := 'Назад';
+  CountProblem := 0;
 end;
 
 procedure HandleInputInInputNames;
@@ -192,11 +193,6 @@ begin
     DrawLabel(Window.Width div 2, 196 + 64 * MaxOptions + 74 * i, Problems[i]);
   end;
   SetBrushStyle(bsSolid)
-end;
-
-procedure DisposeInputNames;
-begin
-  
 end;
 
 begin

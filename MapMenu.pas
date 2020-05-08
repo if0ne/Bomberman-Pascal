@@ -6,7 +6,6 @@ procedure InitMapMenu();
 procedure HandleInputInMapMenu();
 procedure UpdateMapMenu(dt : integer);
 procedure RenderMapMenu();
-procedure DisposeMapMenu();
 
 implementation
 
@@ -132,11 +131,6 @@ begin
     end;
     DrawButton(Window.Width div 2, 138 + 50 *(Count + i), Options[i], defaultSize, isActive);
   end;
-end;
-
-procedure DisposeMapMenu;
-begin
-  
 end;
 
 begin

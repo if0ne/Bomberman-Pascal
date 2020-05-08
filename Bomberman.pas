@@ -126,7 +126,7 @@ begin
     DeltaTime := LastTime - CurrentTime;
     if (DeltaTime <> 0) then
     begin
-      SetWindowTitle('Bombermam (FPS:' + Trunc(1/DeltaTime * 1000) + ')');
+      SetWindowTitle('Bomberman (FPS:' + Trunc(1/DeltaTime * 1000) + ')');
     end;
     if (17 - DeltaTime >= 0) then
     begin

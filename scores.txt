@@ -1,7 +1,7 @@
-W 43
 LOH 34
+W 31
 DA 0
 GG 0
 PIDOR -9
+D -15
 WW -15
-D -24

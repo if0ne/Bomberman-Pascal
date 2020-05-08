@@ -11,7 +11,6 @@ procedure UpdateHighscore(dt : integer);
 procedure RenderNewHighscore();
 procedure RenderHighscore();
 procedure DisposeNewHighscore();
-procedure DisposeHighscore();
 
 implementation
 
@@ -96,6 +95,8 @@ begin
     end;
   end;
 end;
+
+////////////////////////////////////////
 
 procedure InitHighscore;
 begin
@@ -352,11 +353,6 @@ begin
   begin
     DrawLabel(Window.Width div 2, 118 + 74 * (NewCount + MaxOptions + i), FinalPlayers[i]);
   end;
-end;
-
-procedure DisposeHighscore;
-begin
-  
 end;
 
 procedure DisposeNewHighscore;

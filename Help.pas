@@ -6,7 +6,6 @@ procedure InitHelp();
 procedure HandleInputInHelp();
 procedure UpdateHelp(dt : integer);
 procedure RenderHelp();
-procedure DisposeHelp();
 
 implementation
 
@@ -119,11 +118,6 @@ begin
     end;
     DrawButton(Window.Width div 2, 502 + 88 * (i - 1) + 8, Options[i], defaultSize, true);
   end;
-end;
-
-procedure DisposeHelp;
-begin
-  
 end;
 
 begin
