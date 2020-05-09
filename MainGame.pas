@@ -2,10 +2,15 @@
 
 interface
 
+{Процедура инциализации сцены игры }
 procedure InitMainGame();
+{Процедура отлова нажатия клавиш сцене игры }
 procedure HandleInputInMainGame();
+{Процедура обновления логики в сцене игры }
 procedure UpdateMainGame(dt : integer);
+{Процедура отрисовки ввода сцены игры }
 procedure RenderMainGame();
+{Процедура очистки данных сцены игры }
 procedure DisposeMainGame();
 
 
@@ -16,15 +21,15 @@ uses
 
 const
   
-  SpawnDelay  = 1000;
-  ChangeDelay = 1000;
+  SpawnDelay  = 1000; //Задержка спавна монстров
   
-  ToUp    = 1;
-  ToRight = 2;
-  ToDown  = 3;
-  ToLeft  = 4;
+  ToUp    = 1; //Направление вверх
+  ToRight = 2; //Направление вправо
+  ToDown  = 3; //Направление вниз
+  ToLeft  = 4; //Направление влево
   
 type
+  {Запись физического объекта, который взаимодействует с другими физическими объектами }
   Collider = record
       _x       : integer;
       _y       : integer;
@@ -35,10 +40,12 @@ type
       Pooled   : boolean;
       ColId    : word;
     end;
+  {Запись координат объекта }
   Transform = record
     _x : integer;
     _y : integer;
   end;
+  {Запись игрока }
   Player = record
     _col        : Collider;
     _pos        : Transform;
@@ -61,6 +68,7 @@ type
     IsImmortal  : boolean;
     Name        : string;
   end;
+  {Запись врага }
   Enemy = record
     _col          : Collider;
     _pos          : Transform;
@@ -77,6 +85,7 @@ type
     CurPosInArray : Transform;
     NewPosInArray : Transform;
   end;
+  {Запись бомбы }
   Bomb = record
     _col      : Collider;
     _pos      : Transform;
@@ -86,17 +95,20 @@ type
     PlayerId  : byte;
     IsAddable : boolean;
   end;
+  {Запись неломаемого блока }
   Iron = record
     _col    : Collider;
     _pos    : Transform;
     _sprite : word = 3;
   end;
+  {Запись ломаемого блока }
   Brick = record
     _col    : Collider;
     _pos    : Transform;
     _sprite : word = 4;
     Pooled  : boolean;
   end;
+  {Запись огня}
   Fire = record
     _pos     : Transform;
     _sprite  : word = 6;
@@ -104,6 +116,7 @@ type
     Pooled   : boolean;
     PlayerId : byte;
   end;
+  {Запись состояния сцены игры }
   GameState = record
     Players          : array[1..MaxPlayers] of Player;
 
@@ -138,19 +151,23 @@ type
   end;
 
 var
-  GameplayState : GameState;
-  MainTime : longint;
-  SpawnCooldown : longint;
+  GameplayState : GameState;       //Сцена игры
+  MainTime : longint;              //Оставшиеся время игры
+  SpawnCooldown : longint;         //Время смерти монстров
   
-  IsPause : boolean;
-  Options : array[1..2] of string;
-  CurrentOp : byte;
-  
+  IsPause : boolean;               //Поставлена пауза или нет
+  Options : array[1..2] of string; //Кнопки в паузе
+  CurrentOp : byte;                //Текущая кнопка
+
+{Процедура уменьшения времени игры   }
+{Параметры: dt - время между кадрами }  
 procedure Countdown(dt : integer);
 begin
   MainTime := MainTime - dt;
 end;
 
+{Процедура уменьшения времени взрыва бомбы }
+{Параметры: dt - время между кадрами       } 
 procedure Bombdown(dt : integer);
 begin
   for var i:=1 to GameplayState.BombCount do
@@ -162,6 +179,8 @@ begin
   end;
 end;
 
+{Процедура уменьшения существования огня }
+{Параметры: dt - время между кадрами     } 
 procedure Firedown(dt : integer);
 begin
   for var i:=1 to GameplayState.FireCount do
@@ -173,6 +192,8 @@ begin
   end;
 end;
 
+{Процедура уменьшения времени спавнка игрока }
+{Параметры: dt - время между кадрами         } 
 procedure Respawndown(dt : integer);
 begin
   for var i:=1 to MaxPlayers do
@@ -184,6 +205,8 @@ begin
   end;
 end;
 
+{Процедура уменьшения времени щита игрока }
+{Параметры: dt - время между кадрами      } 
 procedure Immortaldown(dt : integer);
 begin
   for var i:=1 to MaxPlayers do
@@ -197,6 +220,8 @@ begin
   end;
 end;
 
+{Процедура проверки сталковения двух коллайдеров (Алгоритм AABB) }
+{Параметры: first, second - физические объекты                   } 
 function IsCollide(first, second : Collider) : boolean;
 begin
   if ((first.Pooled = false) or (second.Pooled = false)) then
@@ -223,6 +248,9 @@ begin
   end;
 end;
 
+{Функция создания физического объекта                          }
+{Параметры: x, y - позиция, offsetX, offsetY - смещение,       }
+{           w, h - ширина, высота, isPooled - активный или нет } 
 function CreateCollider(x, y, offsetX, offsetY, h, w : integer; isPooled : boolean) : Collider;
 begin
   var temp : Collider;
@@ -239,6 +267,8 @@ begin
   CreateCollider := temp;
 end;
 
+{Функция попытки убить игрока }
+{Параметры: _player - игрок   }
 function TryKillPlayer(var _player : Player) : boolean;
 begin
   TryKillPlayer := false;
@@ -250,12 +280,14 @@ begin
   end;
 end;
 
-function CheckCollisionWithEnemy(player : Collider) : boolean;
+{Функция проверки столкновений с врагами       }
+{Параметры: _player - физический объект игрока }
+function CheckCollisionWithEnemy(_player : Collider) : boolean;
 begin
   CheckCollisionWithEnemy := false;
   for var i:=1 to 6 do
   begin
-    if (IsCollide(player, GameplayState.Enemies[i]._col)) then
+    if (IsCollide(_player, GameplayState.Enemies[i]._col)) then
     begin
       CheckCollisionWithEnemy := true;
       exit;
@@ -263,6 +295,8 @@ begin
   end;
 end;
 
+{Функция проверки столкновений с блоками       }
+{Параметры: entity - физический объект игрока  }
 function CheckCollision(entity : Collider) : boolean;
 begin
   CheckCollision:=false;
@@ -276,6 +310,8 @@ begin
   end;
 end;
 
+{Функция проверки существует бомба на данный позиции или нет }
+{Параметры: _bomb - добавляемая бомба                        }
 function ContainsBomb(_bomb : Bomb) : boolean;
 begin
   ContainsBomb := false;
@@ -291,6 +327,7 @@ begin
   end;
 end;
 
+{Функция получения свободного индекса бомбы в массиве }
 function GetFirstPooledBomb() : word;
 begin
   for var i:=1 to GameplayState.BombCount do
@@ -314,6 +351,9 @@ begin
   end;
 end;
 
+{Процедура создания бомбы                                        }
+{Параметры: x, y - позиция, playerId - номер игрока              }
+{           byPlayer - бомба игрока или нет, time - время взрыва } 
 procedure CreateBomb(x, y : integer; playerId : word; byPlayer : boolean; time : integer);
 begin
   var _x := (x + 32) div 64 * 64;
@@ -337,6 +377,8 @@ begin
   end;
 end;
 
+{Процедура управления игроком                                           }
+{Параметры: movablePlayer - управляемый игрок, dt - время между кадрами }
 procedure MovePlayer(var movablePlayer : Player; dt : integer);
 begin
   if (not movablePlayer.IsDead) then
@@ -382,6 +424,7 @@ begin
   end;
 end;
 
+{Функция получения свободного индекса огня в массиве }
 function GetFirstPooledFire() : word;
 begin
   for var i:=1 to GameplayState.FireCount do
@@ -405,6 +448,9 @@ begin
   end;
 end;
 
+{Фукнция создания огня                                           }
+{Параметры: x, y - позиция, nx, ny - смещение огня               }
+{           playerId - номер игрока                              } 
 function CreateFire(x, y, nx, ny : integer; playerId : word) : Fire;
 begin
   var _x := x div 64;
@@ -420,6 +466,8 @@ begin
   CreateFire := _fire;
 end;
 
+{Фукнция взрыва клетки                                           }
+{Параметры: _fire - огонь на клетке                              }
 function BlowUpCell(_fire : Fire) : boolean;
 begin
   var _x := _fire._pos._x div 64 + 1;
@@ -489,6 +537,8 @@ begin
   end;
 end;
 
+{Процедура взрыва бомбы                                           }
+{Параметры: _bomb - бомба, waveSize - длина волны взрыва          }
 procedure ExplodeBomb(_bomb : Bomb; waveSize : word);
 begin
   var center := CreateFire(_bomb._pos._x, _bomb._pos._y, 0, 0, _bomb.PlayerId);
@@ -533,6 +583,8 @@ begin
   end;
 end;
 
+{Процедура обновления огня           }
+{Параметры: dt - время между кадрами }  
 procedure UpdateFire(dt : integer);
 begin
   for var i:=1 to GameplayState.FireCount do
@@ -544,6 +596,8 @@ begin
   end;
 end;
 
+{Процедура обновления бомб           }
+{Параметры: dt - время между кадрами }  
 procedure UpdateBomb(dt : integer);
 begin
   for var i:=1 to GameplayState.BombCount do
@@ -576,6 +630,8 @@ begin
   end;
 end;
 
+{Функция проверки, свободно на клетке или нет           }
+{Параметры: x, y - координаты в двумерном массиве       }  
 function IsEmpty(x, y : integer) : boolean;
 begin
   if (x > 0) and (x < 16) and (y > 0) and (y < 12) then
@@ -591,6 +647,8 @@ begin
   end;
 end;
 
+{Функция проверки, свободно в определенном направлении для монстра }
+{Параметры: _enemy - враг, dir - направление                       }  
 function IsEmptyForEnemy(_enemy : Enemy; dir : integer) : boolean;
 begin
   IsEmptyForEnemy := true;
@@ -618,6 +676,8 @@ begin
   end;
 end;
 
+{Функция проверки, мертвы ли другие игроки или нет }
+{Параметры: playerId - номер спавнящегося игрока   }  
 function AreOtherDead(playerId : integer) : boolean;
 var
   deadCount : integer;
@@ -637,6 +697,8 @@ begin
     AreOtherDead := false;
 end;
 
+{Процедура получения самой опасной координаты                }
+{Параметры: x, y - координаты точки, playerId - номер игрока }  
 procedure GetDangerousPoint(var x, y : integer; playerId : integer);
 var
   n : integer;
@@ -669,6 +731,8 @@ begin
   y := Round(y / n);
 end;
 
+{Процедура спавна игрока                }
+{Параметры: _player - спавнящийся игрок }  
 procedure SpawnPlayer(var _player : Player);
 begin
   var trans, dang : Transform;
@@ -705,6 +769,8 @@ begin
   _player.Immortal := 1500;
 end;
 
+{Процедура спавна врага       }
+{Параметры: x, y - координаты }  
 procedure SpawnEnemy(var _enemy : Enemy; x, y:integer);
 begin
   with _enemy do
@@ -747,6 +813,8 @@ begin
   end;
 end;
 
+{Процедура попытки смены направления движения врага }
+{Параметры: _enemy - враг                           }  
 procedure TryToChangeDir(var _enemy : Enemy);
 begin
   if ((_enemy.Direction = ToRight) or (_enemy.Direction = ToLeft)) then
@@ -801,6 +869,8 @@ begin
   end;
 end;
 
+{Функция получения координат в двумерном массиве врага  }
+{Параметры: _enemy - враг                               }  
 function GetCurPosInArr(var _enemy : Enemy) : Transform;
 begin
   var trans : Transform;
@@ -817,6 +887,8 @@ begin
   GetCurPosInArr := trans;
 end;
 
+{Функция проверки координаты врага на новые координаты }
+{Параметры: _enemy - враг      }  
 function CheckEnemyPosition(var _enemy : Enemy) : boolean;
 begin
   var x := _enemy.CurPosInArray._x;
@@ -834,6 +906,8 @@ begin
   end;
 end;
 
+{Процедура обновления респавна игроков }
+{Параметры: dt - время между кадрами   }  
 procedure UpdateRespawn(dt : integer);
 begin
   for var i:=1 to MaxPlayers do
@@ -845,6 +919,8 @@ begin
   end;
 end;
 
+{Процедура обновления респавна врагов }
+{Параметры: dt - время между кадрами  } 
 procedure UpdateRespawnEnemies(dt : integer);
 begin
   for var i:=1 to 6 do
@@ -869,6 +945,8 @@ begin
   end;
 end;
 
+{Процедура обновления врагов           }
+{Параметры: dt - время между кадрами   } 
 procedure UpdateEnemy(dt : integer);
 begin
   for var i:=1 to 6 do
@@ -935,6 +1013,7 @@ begin
   end;
 end;
 
+{Процедура рисования врагов }
 procedure RenderEnemies();
 begin
  for var i:=1 to 6 do
@@ -946,11 +1025,13 @@ begin
  end;
 end;
 
+{Процедура рисования земли }
 procedure RenderGround();
 begin
   RenderGrass(0, 0, 0, TopOffset);
 end;
 
+{Процедура рисования неломаемых блоков }
 procedure RenderIrons();
 begin
   for var i:=1 to GameplayState.IronCount do
@@ -959,6 +1040,7 @@ begin
   end;
 end;
 
+{Процедура рисования ломаемых блоков }
 procedure RenderBricks();
 begin
   for var i:=1 to GameplayState.BrickCount do
@@ -970,6 +1052,7 @@ begin
   end;
 end;
 
+{Процедура рисования бомб }
 procedure RenderBombs();
 begin
   for var i:=1 to GameplayState.BombCount do
@@ -981,6 +1064,7 @@ begin
   end;
 end;
 
+{Процедура рисования огня }
 procedure RenderFires();
 begin
   for var i:=1 to GameplayState.FireCount do
@@ -992,6 +1076,7 @@ begin
   end;
 end;
 
+{Процедура рисования игроков }
 procedure RenderPlayers();
 begin
   for var i:=1 to MaxPlayers do
@@ -1007,6 +1092,7 @@ begin
   end;
 end;
 
+{Процедура рисования порталов врага }
 procedure RenderPortals();
 begin
   for var i:=1 to GameplayState.SpawnCountEnemy do
@@ -1015,6 +1101,8 @@ begin
   end;
 end;
 
+{Процедура загрузки карты             }
+{Параметры: filename - название карты }
 procedure LoadMap(filename : string);
 begin
   var textFile : Text;
@@ -1040,6 +1128,7 @@ begin
   Close(textFile);
 end;
 
+{Процедура заполения массивов блоков и порталов }
 procedure FillMap();
 begin
   for var rows:=1 to GameplayState.MapY do
@@ -1094,8 +1183,6 @@ begin
     end;
   end;
 end;
-
-////////////////////////////////////////////////
 
 procedure InitMainGame();
 begin

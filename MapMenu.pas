@@ -2,9 +2,13 @@
 
 interface
 
+{Процедура инциализации выбора карт }
 procedure InitMapMenu();
+{Процедура отлова нажатия клавиш в выборе карт }
 procedure HandleInputInMapMenu();
+{Процедура обновления логики выбора карт }
 procedure UpdateMapMenu(dt : integer);
+{Процедура отрисовки выбора карт }
 procedure RenderMapMenu();
 
 implementation
@@ -13,14 +17,13 @@ uses
   GraphABC, GlobalVars, UIAssets;
   
 const
-  MaxOptions = 1;
+  MaxOptions = 1; //Максимальное кол-во кнопок в данном состоянии
 var 
-  TextFile : Text;
-  Count : integer;
-  Maps : array[1..12] of string;
-  Options : array[1..MaxOptions] of string;
-  CurrentOp : byte;
-  i : integer;
+  TextFile : Text;                          //Текстовой файл с названием карт
+  Count : integer;                          //Кол-во карт
+  Maps : array[1..12] of string;            //Названия карт
+  Options : array[1..MaxOptions] of string; //Кнопки
+  CurrentOp : byte;                         //Текущая кнопка или карта
   
 procedure InitMapMenu;
 begin

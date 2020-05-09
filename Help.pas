@@ -2,9 +2,13 @@
 
 interface
 
+{Процедура инциализации справки }
 procedure InitHelp();
+{Процедура отлова нажатия клавиш в справке }
 procedure HandleInputInHelp();
+{Процедура обновления логики справки }
 procedure UpdateHelp(dt : integer);
+{Процедура отрисовки справки }
 procedure RenderHelp();
 
 implementation
@@ -13,13 +17,13 @@ uses
   GlobalVars, GraphABC, UIAssets;
   
 const
-  MaxOptions = 1;
+  MaxOptions = 1; //Максимальное кол-во кнопок в данном состоянии
   
 var
-  Count : integer;
-  HelpStr : array[1..4] of string;
-  Options   : array[1..MaxOptions] of string;
-  CurrentOp : byte;
+  Count : integer;                            //Кол-во строк в справке
+  HelpStr : array[1..4] of string;            //Подсказки
+  Options   : array[1..MaxOptions] of string; //Кнопки
+  CurrentOp : byte;                           //Текущая кнопка
 
 procedure InitHelp;
 begin
@@ -95,16 +99,13 @@ begin
   Window.Clear();
   SetBrushStyle(bsSolid);
   Background.Draw(0, 0);
-  //Constants: 78 - размер по макету
   DrawHeader(Window.Width div 2, 78, 'СПРАВКА');
-  //Constants: 74, 154 - размер по макету
   HelpBack.Draw(74, 154);
   SetBrushStyle(bsClear);
   SetFontSize(16);
   SetFontColor(clWhite);
   for var i:=1 to Count do
   begin
-    //Constants: 96, 158, 50 - размер по макету
     TextOut(96, 158 + 50 * i, i + '. ' + HelpStr[i]);
   end;
   SetBrushStyle(bsSolid);

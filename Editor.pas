@@ -2,9 +2,13 @@
 
 interface
 
+{Процедура инциализации редактора }
 procedure InitEditor();
+{Процедура отлова нажатия клавиш в редакторе }
 procedure HandleInputInEditor();
+{Процедура обновления логики редактора }
 procedure UpdateEditor(dt : integer);
+{Процедура отрисовки редактора }
 procedure RenderEditor();
 
 implementation
@@ -13,36 +17,41 @@ uses
   GraphABC, GlobalVars, Renderer, UIAssets;
 
 type
+  {Запись, которая хранит состояние карты редактора }
   EditorState = record
     Map   : array[1..20, 1..20] of integer;
     MapX  : word;
     MapY  : word;
   end;
   
+  {Вспомогательная запись для алгоритма поиска путей, хранящая координаты }
   Cell = record
     X : integer;
     Y : integer;
   end;
 
 const
-  TopOffset = 64;
+  {Подсостояние при котором редактируется уровень }
   EditState = 1;
+  {Подсостояние ввода названия карты и сохранения ее }
   SaveState = 2;
 
 var
   EditModeState : EditorState;
   
-  CurrentX : integer;
-  CurrentY : integer;
-  CurrentBlock : word;
-  CurrentUIBlock : word;
-  CurrentState : word;
+  CurrentX : integer;     //Текущая позиция "курсора" на оси X
+  CurrentY : integer;     //Текущая позиция "курсора" на оси Y
+  CurrentBlock : word;    //Текущий выбранный блок
+  CurrentUIBlock : word;  //Текущий выбранный блок, отображаемый на графическом интерфейсе
+  CurrentState : word;    //Текущее подсостояние: EditState или SaveState
+    
+  MapName  : string;                //Название текущей карты
+  MapCount : integer;               //Кол-во всех созданных карт
+  Problems : array[1..5] of string; //Вспомогательная переменная, хранящая ошибки при сохранении карты
+  CountProblem : integer;           //Кол-во ошибок
   
-  MapName  : string;
-  MapCount : integer;
-  Problems : array[1..5] of string;
-  CountProblem : integer;
-  
+{Процедура изменения имени текущей карты }
+{Параметры: _mapName - имя карты }
 procedure ChangeMapName(var _mapName : string);
 begin
   if (LastChar = VK_BACK) then
@@ -59,6 +68,8 @@ begin
   end;
 end;
 
+{Функция, проверяющая есть ли такая карта или нет }
+{Параметры: _mapName - имя карты }
 function ContainsMap(_mapName : string) : boolean;
 var
   MapFile : Text;
@@ -84,6 +95,8 @@ begin
   end;
 end;
 
+{Процедура сохранения текущей карты }
+{Параметры: _mapName - имя карты }
 procedure SaveMapWithName(_mapName : string);
 var
   MapFile : Text;
@@ -106,6 +119,7 @@ begin
   Close(NewMap);
 end;
 
+{Фукнция проверки кол-во спавнов игрока и монстров }
 function CheckCountSpawns() : boolean;
 var
   SpawnPlayerCount : integer;
@@ -134,12 +148,16 @@ begin
     CountProblem:=CountProblem+1;
     Problems[CountProblem]:='Кол-во спавнов ИИ либо меньше 1, либо больше 4.';
   end;
-  if ((SpawnPlayerCount > 1) and (SpawnPlayerCount < 9) and (SpawnEnemyCount > 0) and (SpawnEnemyCount < 5)) then
+  if ((SpawnPlayerCount > 1) and (SpawnPlayerCount < 9) 
+  and (SpawnEnemyCount > 0) and (SpawnEnemyCount < 5)) then
   begin
     CheckCountSpawns := true;
   end;
 end;
 
+{Процедура проверяющая есть ли путь от одной точки к другой }
+{Параметры: startPos - начальная позиция }
+{           tatgetPos - конечная позиция }
 function FindPath(startPos, targetPos : Cell) : boolean;
 var
   stop : boolean;
@@ -162,22 +180,26 @@ begin
       for x:=1 to EditModeState.MapX do
         if (NewMap[y, x] = step) then
         begin
-          if (y - 1 >= 1) and (NewMap[y - 1, x] <> - 2) and (NewMap[y - 1, x] = -1) then
+          if (y - 1 >= 1) and (NewMap[y - 1, x] <> - 2) 
+          and (NewMap[y - 1, x] = -1) then
           begin
             stop := false;
             NewMap[y - 1, x] := step + 1;
           end;
-          if (y + 1 <= EditModeState.MapY) and (NewMap[y + 1, x] <> - 2) and (NewMap[y + 1, x] = -1) then
+          if (y + 1 <= EditModeState.MapY) and (NewMap[y + 1, x] <> - 2) 
+          and (NewMap[y + 1, x] = -1) then
           begin
             stop := false;
             NewMap[y + 1, x] := step + 1;
           end;
-          if (x - 1 >= 1) and (NewMap[y, x - 1] <> - 2) and (NewMap[y, x - 1] = -1) then
+          if (x - 1 >= 1) and (NewMap[y, x - 1] <> - 2) 
+          and (NewMap[y, x - 1] = -1) then
           begin
             stop := false;
             NewMap[y, x - 1] := step + 1;
           end;
-          if (x + 1 <= EditModeState.MapX) and (NewMap[y, x + 1] <> - 2) and (NewMap[y, x + 1] = -1) then
+          if (x + 1 <= EditModeState.MapX) and (NewMap[y, x + 1] <> - 2) 
+          and (NewMap[y, x + 1] = -1) then
           begin
             stop := false;
             NewMap[y, x + 1] := step + 1;
@@ -195,6 +217,7 @@ begin
   end;
 end;
 
+{Функция нахождения первого спавна игрока }
 function FindFirstSpawn() : Cell;
 var
   Pose : Cell;
@@ -210,6 +233,7 @@ begin
       end;
 end;
 
+{Функция проверки, нет ли тупиков между спавнами }
 function CheckRoads() : boolean;
 var
   StartPos : Cell;
@@ -235,13 +259,16 @@ begin
     if (not FindPath(StartPos, OtherPos[i])) then
     begin
       CountProblem:=CountProblem + 1;
-      Problems[CountProblem]:='Не найден путь для ' + i + '-ого спавна. Координаты: (' + StartPos.X + ';' + StartPos.Y + ') и (' + OtherPos[i].X + ';' + OtherPos[i].Y + ')';
+      Problems[CountProblem]:='Не найден путь для ' + i + 
+      '-ого спавна. Координаты: (' + StartPos.X + ';' + StartPos.Y + ') и (' +
+      OtherPos[i].X + ';' + OtherPos[i].Y + ')';
       CheckRoads := false;
       exit;
     end;
   end;
 end;
 
+{Функция проверки сохраняемой карты на ошибки }
 function RightMap() : boolean;
 begin
   if CheckCountSpawns() then
@@ -261,8 +288,6 @@ begin
   end;
 end;  
 
-////////////////////////////////////////
-  
 procedure InitEditor;
 begin
   MapName:='';

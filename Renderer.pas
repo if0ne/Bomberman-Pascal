@@ -2,18 +2,45 @@
 
 interface
 
+{Процедура инциализации рендера }
 procedure InitRenderer();
+{Процедура рисования игрока                                         }
+{Параметры: x, y - позиция, offset_x, offset_y - смещение на экране }
+{           player_id - номер игрока, player_name - имя игрока      }
 procedure RenderPlayer(x, y, offset_x, offset_y : integer; player_id : byte; player_name : string);
+{Процедура рисования щита                                           }
+{Параметры: x, y - позиция, offset_x, offset_y - смещение на экране }
 procedure RenderShield(x, y, offset_x, offset_y : integer);
+{Процедура рисования врага                                          }
+{Параметры: x, y - позиция, offset_x, offset_y - смещение на экране }
+{           enemy_type - тип монстра                                }
 procedure RenderEnemy(x, y, offset_x, offset_y : integer; enemy_type : byte);
+{Процедура рисования земли                                          }
+{Параметры: x, y - позиция, offset_x, offset_y - смещение на экране }
 procedure RenderGrass(x, y, offset_x, offset_y : integer);
+{Процедура рисования блока земли                                    }
+{Параметры: x, y - позиция, offset_x, offset_y - смещение на экране }
 procedure RenderGrassBlock(x, y, offset_x, offset_y : integer);
+{Процедура рисования неломаемых блоков                              }
+{Параметры: x, y - позиция, offset_x, offset_y - смещение на экране }
 procedure RenderIron(x, y, offset_x, offset_y : integer);
+{Процедура рисования ломаемых блоков                                }
+{Параметры: x, y - позиция, offset_x, offset_y - смещение на экране }
 procedure RenderBrick(x, y, offset_x, offset_y : integer);
+{Процедура рисования бомб                                           }
+{Параметры: x, y - позиция, offset_x, offset_y - смещение на экране }
 procedure RenderBomb(x, y, offset_x, offset_y : integer);
+{Процедура рисования огня                                           }
+{Параметры: x, y - позиция, offset_x, offset_y - смещение на экране }
 procedure RenderFire(x, y, offset_x, offset_y : integer);
+{Процедура рисования портала игроков                                }
+{Параметры: x, y - позиция, offset_x, offset_y - смещение на экране }
 procedure RenderPlayerSpawner(x, y, offset_x, offset_y : integer);
+{Процедура рисования портала монстров                               }
+{Параметры: x, y - позиция, offset_x, offset_y - смещение на экране }
 procedure RenderEnemySpawner(x, y, offset_x, offset_y : integer);
+{Процедура рисования иконки бомбы                                   }
+{Параметры: x, y - позиция, offset_x, offset_y - смещение на экране }
 procedure RenderBombIcon(x, y, offset_x, offset_y : integer);
 
 implementation
@@ -22,24 +49,24 @@ uses
   GraphABC, GlobalVars;
 
 const
-  TileSize = 64;
+  TileSize = 64;            
   
-  Player1_Sprite = 1;
-  Player2_Sprite = 2;
-  Bomb_Sprite = 3;
-  Iron_Sprite = 4;
-  Brick_Sprite = 5;
-  Enemy1_Sprite = 6;
-  Enemy2_Sprite = 7;
-  Enemy3_Sprite = 8;
-  EnemySpawner_Sprite = 9;
-  PlayerSpawner_Sprite = 10;
-  PlayerShield_Sprite = 11;
-  Fire_Sprite = 12;
+  Player1_Sprite = 1;        //Номер первого игрока
+  Player2_Sprite = 2;        //Номер второго игрока
+  Bomb_Sprite = 3;           //Номер бомбы
+  Iron_Sprite = 4;           //Номер неломаемого блока
+  Brick_Sprite = 5;          //Номер ломаемого блока
+  Enemy1_Sprite = 6;         //Номер обычного монстра
+  Enemy2_Sprite = 7;         //Номер быстрого монстра
+  Enemy3_Sprite = 8;         //Номер взрывного монстра 
+  EnemySpawner_Sprite = 9;   //Номер портала монстра
+  PlayerSpawner_Sprite = 10; //Номер портала игрока
+  PlayerShield_Sprite = 11;  //Номер щита игрока
+  Fire_Sprite = 12;          //Номер огня
   
 var
-  Sprites : array[1..32] of Picture;  
-  HighGraphics : boolean;
+  Sprites : array[1..12] of Picture; //Массив всех картинок
+  HighGraphics : boolean;            //Использовать спрайты для блоков или нет
   
 procedure InitRenderer();
 begin
@@ -77,7 +104,6 @@ procedure RenderGrass;
 begin
   SetBrushStyle(bsSolid);
   SetBrushColor(RGB(255, 219, 123));
-  //Constants: 15 = MapX, 11 = MapY
   FillRectangle(x + offset_x, y + offset_y, 15 * TileSize + offset_x, 11 * TileSize + offset_y);
 end;
 
@@ -97,7 +123,6 @@ begin
   end
   else
   begin
-    //Constants : 56 - смещение темного цвета серого
     SetBrushColor(clLightGray);
     FillRectangle(x + offset_x, y + offset_y, x + offset_x + TileSize, y + offset_y + TileSize);
     SetBrushColor(clDarkGray);
@@ -137,7 +162,6 @@ begin
   SetBrushStyle(bsClear);
   SetFontSize(8);
   DrawTextCentered(x + offset_x + TileSize div 2, y + offset_y, player_name);
-  //Constants: 1 - номер первого игрока
   if (player_id = 1) then
   begin
     Sprites[Player1_Sprite].Draw(x + offset_x, y + offset_y, TileSize, TileSize);

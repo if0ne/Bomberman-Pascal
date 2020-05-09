@@ -2,9 +2,13 @@
 
 interface
 
+{Процедура инциализации меню }
 procedure InitMenu();
+{Процедура отлова нажатия клавиш в меню }
 procedure HandleInputInMenu();
+{Процедура обновления логики меню }
 procedure UpdateMenu(dt : integer);
+{Процедура отрисовки меню }
 procedure RenderMenu();
 
 implementation
@@ -13,12 +17,12 @@ uses
   GlobalVars, GraphABC, UIAssets;
 
 const
-  MaxOptions = 5;
+  MaxOptions = 5; //Максимальное кол-во кнопок в данном состоянии
 
 var
-  Options   : array[1..MaxOptions] of string;
-  CurrentOp : byte;
-  Time : real;
+  Options   : array[1..MaxOptions] of string; //Кнопки
+  CurrentOp : byte;                           //Текущая кнопка
+  Time : real;                                //Вспомогательная переменная для отрисовки имени создателя
 
 procedure InitMenu;
 begin
@@ -112,9 +116,7 @@ begin
   Window.Clear();
   SetBrushStyle(bsSolid);
   Background.Draw(0, 0);
-  //Constants: 94, 87 - размеры из макета
   Title.Draw(94, 87);
-  //Constants: 440, 216 - размеры из макета
   Logo.Draw(440, 216 + Round(10 * Sin(RadToDeg(Time))));
   for var i:=1 to MaxOptions do
   begin
@@ -123,7 +125,6 @@ begin
     begin
       isActive := true;
     end;
-    //Constants: 322 - Смещение сверху, высчитано из макета, 94 - размер кнопки + расстояние между ними (84 + 10)
     DrawButton(Window.Width div 2, 322 + 94 * (i - 1), Options[i], defaultSize, isActive);
   end;
 end;

@@ -2,14 +2,23 @@
 
 interface
 
+{Процедура инциализации рекордов }
 procedure InitHighscore();
+{Процедура инциализации финальных результатов }
 procedure InitNewHighscore();
+{Процедура отлова нажатия клавиш в рекордах }
 procedure HandleInputInHighscore();
+{Процедура отлова нажатия клавиш в финальных результатах }
 procedure HandleInputInNewHighscore();
+{Процедура обновления логики финальных результатов }
 procedure UpdateNewHighscore(dt : integer);
+{Процедура обновления логики рекордов }
 procedure UpdateHighscore(dt : integer);
+{Процедура отрисовки финальных результатов }
 procedure RenderNewHighscore();
+{Процедура отрисовки рекордов }
 procedure RenderHighscore();
+{Процедура очистки данных финальных результатов }
 procedure DisposeNewHighscore();
 
 implementation
@@ -18,22 +27,26 @@ uses
   GraphABC, GlobalVars, UIAssets;
 
 const
-  MaxOptions = 1;
-  MaxAllPlayer = MaxPlayers + 25;
+  MaxOptions = 1;                  //Максимальное кол-во кнопок в данном состоянии
+  MaxAllPlayer = MaxPlayers + 25;  //Максимальное кол-во игроков, записываемых в файл и кол-во игроков
 var 
-  TextFile : Text;
-  Count : integer;
-  NickAndScores : array[1..5] of string;
-  Options   : array[1..MaxOptions] of string;
-  CurrentOp : byte;
+  TextFile : Text;                               //Текстовой файл с рекордами
+  Count : integer;                               //Кол-во игроков в файле
+  NickAndScores : array[1..5] of string;         //Никнеймы и счёт топ 5 игроков
+  Options   : array[1..MaxOptions] of string;    //Кнопки
+  CurrentOp : byte;                              //Текущая кнопка
   
-  NewNick : array[1..MaxAllPlayer] of string;
-  NewScore : array[1..MaxAllPlayer] of integer;
-  NewCount : integer;
+  NewNick : array[1..MaxAllPlayer] of string;    //Никнеймы игроков в файле и новые никнеймы
+  NewScore : array[1..MaxAllPlayer] of integer;  //Счета игроков в файле и новые счета
+  NewCount : integer;                            //Кол-во выводимых никнеймов в финальных результатах
   
-  Poses : array[1..MaxPlayers] of integer;
-  FinalPlayers : array[1..MaxPlayers] of string;
+  Poses : array[1..MaxPlayers] of integer;       //Позиции новых игроков в топе
+  FinalPlayers : array[1..MaxPlayers] of string; //Состояние новых игроков в финальных результатах
 
+{Процедура парсинга строки в никнейм и в счёт   }
+{Параметры: nick - спарщенный никнейм           }
+{           score - спарщенный счёт             }
+{           str - строка, которую надо парсить  }
 procedure ParseLine(var nick : string; var score : integer; str : string);
 var
   i, code : integer;
@@ -50,6 +63,7 @@ begin
   end;
 end;
 
+{Процедура сортировки массива счетов в финальных результатах }
 procedure SortNew();
 begin
   for var i := 1 to Count - 1 do
@@ -69,6 +83,9 @@ begin
   end;
 end;
 
+{Функция замены результатов, если игрок уже играл с таким никнеймом }
+{Параметры: nick - никнейм игрока                                   }
+{           score - счет игрока                                     }
 function ReplaceSamePlayer(nick : string; score : integer) : boolean;
 begin
   ReplaceSamePlayer := false;
@@ -83,6 +100,8 @@ begin
   end;
 end;
 
+{Функция проверки находится новый игрок в топе или нет }
+{Параметры: id - позиция игрока                        }
 function IsInTop(id : integer) : boolean;
 begin
   IsInTop := false;
@@ -95,8 +114,6 @@ begin
     end;
   end;
 end;
-
-////////////////////////////////////////
 
 procedure InitHighscore;
 begin

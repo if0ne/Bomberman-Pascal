@@ -1,4 +1,11 @@
-﻿program Bomberman;
+﻿{Программа: Bomberman                                                      }
+{Цель: создать игру Bomberman                                              }
+{Переменные: CurrentTime, LastTime - время начала работы кадра, 
+время конца работы кадра, DeltaTime - разница между LastTime и CurrentTime }
+{Программист: Агафонов Павел Алексеевич                                    }
+{Проверил: Антипов Олег Владимирович                                       }
+{Дата написания: 08.05.2020                                                }
+program Bomberman;
 
 uses
   GraphABC, GlobalVars, Menu, Help, Highscore, MapMenu, InputNames, MainGame, Editor, UIAssets, Renderer; 
@@ -6,18 +13,24 @@ uses
 var
   CurrentTime, LastTime : longint;
   DeltaTime : integer;
- 
+
+{Процедура обработки отжатия клавиши клавиатуры }
+{Переменные: key - нажатая кнопка               }
 procedure HandleKeyDown(key : integer);
 begin
   inputKeys[key] := true;
   LastChar := key;
 end;  
 
+{Процедура обработки нажатия клавиши клавиатуры }
+{Переменные: key - нажатая кнопка               }
 procedure HandleKeyUp(key : integer);
 begin
   inputKeys[key] := false;
 end;  
 
+{Процедура обновления логики текущего состояния }
+{Переменные: dt - время между кадрами в мс      }
 procedure Update(dt : integer);
 begin
   case _CurrentState of
@@ -56,6 +69,7 @@ begin
   end;
 end;
 
+{Процедура отрисовки текущего состояния }
 procedure Render();
 begin
   case _CurrentState of
@@ -125,13 +139,9 @@ begin
     LastTime := Milliseconds();
     DeltaTime := LastTime - CurrentTime;
     if (DeltaTime <> 0) then
-    begin
       SetWindowTitle('Bomberman (FPS:' + Trunc(1/DeltaTime * 1000) + ')');
-    end;
     if (17 - DeltaTime >= 0) then
-    begin
       Sleep(17 - DeltaTime);
-    end;
   end;
   UnlockDrawing();
   Window.Clear();

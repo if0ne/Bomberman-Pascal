@@ -4,29 +4,42 @@ interface
 
 uses GraphABC;
 
+{Процедура инциализации вспомогательных ресурсов }
 procedure InitAssets();
+{Процедура рисования кнопки с текстом                              }
+{Параметры: x, y - позиция, text - текст, fontSize - размер шрифта }
+{           isActive - выбрана кнопка или нет                      }
 procedure DrawButton(x, y : integer; text : string; fontSize : integer; isActive : boolean);
+{Процедура рисования заголовка                                     }
+{Параметры: x, y - позиция, text - текст                           }
 procedure DrawHeader(x, y : integer; text : string);
+{Процедура рисования надписи со счетом                             }
+{Параметры: x, y - позиция, text - текст, fontSize - размер шрифта }
+{           scoreType - тип надписи                                }
 procedure DrawScoreLabel(x, y: integer; text : string; scoreType : word);
+{Процедура рисования линии выбора }
+{Параметры: x, y - позиция, w, h - ширина, высота                  }
 procedure DrawChooseLine(x, y, w, h : integer);
+{Процедура рисования надписи                                       }
+{Параметры: x, y - позиция, text - текст                           }
 procedure DrawLabel(x, y : integer; text : string);
 
 const
-  DefaultSize = 26;
-  LittleSize  = 8;
+  DefaultSize = 26; //Стандартный размер шрифта
+  LittleSize  = 8;  //Маленький размер шрифта
   
-  GoldType = 1;
-  SilverType = 2;
-  BronzeType = 3;
-  DefaultType = 4;
-  NewType = 5;
+  GoldType = 1;     //Золотой тип надписи со счетом
+  SilverType = 2;   //Серебрянный тип надписи со счетом
+  BronzeType = 3;   //Бронзовый тип надписи со счетом
+  DefaultType = 4;  //Стандартный тип надписи со счетом
+  NewType = 5;      //Новый тип надписи со счетом
 
 var
-  Logo, Title, Header, TextLabel : Picture;
-  Background, Score : Picture;
-  Button, ActiveButton : Picture;
-  HelpBack : Picture;
-  PauseBack : Picture;
+  Logo, Title, Header, TextLabel : Picture; //Автор игры, название игры, фон заголовка, фон надписи
+  Background, Score : Picture;              //Фон меню, фон надписи со счетом 
+  Button, ActiveButton : Picture;           //Кнопка, активная кнопка
+  HelpBack : Picture;                       //Фон для справки
+  PauseBack : Picture;                      //Фон для паузы
 
 implementation
 

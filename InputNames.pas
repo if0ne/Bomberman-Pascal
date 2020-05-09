@@ -2,9 +2,13 @@
 
 interface
 
+{Процедура инциализации ввода никнеймов }
 procedure InitInputNames();
+{Процедура отлова нажатия клавиш в вводе никнеймов }
 procedure HandleInputInInputNames();
+{Процедура обновления логики ввода никнеймов }
 procedure UpdateInputNames(dt : integer);
+{Процедура отрисовки ввода никнеймов }
 procedure RenderInputNames();
 
 implementation
@@ -13,16 +17,17 @@ uses
   GraphABC, GlobalVars, UIAssets;
 
 const
-  MaxOptions = MaxPlayers + 1;
+  MaxOptions = MaxPlayers + 1; //Максимальное кол-во кнопок и полей ввода в данном состоянии
 
 var
-  CurrentOp : byte;
-  Options : array[1..MaxOptions] of string;
-  InputPlayerNames : plNames;
+  CurrentOp : byte;                         //Текущая кнопка или поле ввода
+  Options : array[1..MaxOptions] of string; //Кнопки и поля ввода
+  InputPlayerNames : plNames;               //Никнеймы игроков
   
-  Problems : array[1..5] of string;
-  CountProblem : integer;
+  Problems : array[1..5] of string;         //Вспомогательная переменная, хранящая ошибки при вводе ников
+  CountProblem : integer;                   //Кол-во ошибок
 
+{Процедура попытки смены текущего состояния на игровую сцену }
 procedure TryToChangeState();
 begin
   CountProblem := 0;
@@ -57,6 +62,8 @@ begin
   ChangeState(MainGameState);
 end;
 
+{Процедура изменения никнейма }
+{Параметры: nick - никнейм }
 procedure ChangeNick(var nick : string);
 begin
   if (LastChar = VK_BACK) then
@@ -72,8 +79,6 @@ begin
     end;
   end;
 end;
-
-//////////////////////////////////////
 
 procedure InitInputNames;
 begin

@@ -3,42 +3,48 @@
 interface
 
 const
-  MenuState       = 1;
-  HelpState       = 2;
-  ChooseMapState  = 3;
-  InputNamesState = 4;
-  MainGameState   = 5;
-  EditorState     = 7;
-  HighscoreState  = 10;
-  EndHighState    = 11;
+  MenuState       = 1;  //Состояние меню 
+  HelpState       = 2;  //Состояние вывода справки
+  ChooseMapState  = 3;  //Состояние выбора карты
+  InputNamesState = 4;  //Состояние ввода ников
+  MainGameState   = 5;  //Состояние самой игры (бомбермена)
+  EditorState     = 7;  //Состояние редактора
+  HighscoreState  = 10; //Состояние вывода рекордов
+  EndHighState    = 11; //Состояние вывода результатов
   
-  DelayInput = 180;
+  DelayInput = 180; //Задержка между нажатиями клавиш
   
-  SlowEnemy   = 1;
-  FastEnemy   = 2;
-  BlowupEnemy = 3;
+  SlowEnemy   = 1; //Тип монстра - обычный
+  FastEnemy   = 2; //Тип монстра - быстрый
+  BlowupEnemy = 3; //Тип монстра - взрывающийся
   
-  TopOffset = 64;
+  TopOffset = 64; //Смещение отрисовки относительно вверха
   
-  MaxPlayers = 2;
+  MaxPlayers = 2; //Максимальное число игроков
   
 type
   plNames  = array[1..MaxPlayers] of string;
   plScores = array[1..MaxPlayers] of integer;
 
 var
-  inputKeys : array[0..255] of boolean;
-  LastChar : integer;
-  IsQuit : boolean;
-  LastChange : longint;
-  _CurrentState : byte;
-  _CurrentMap : string;
+  inputKeys : array[0..255] of boolean; //Состояние клавиш
+  LastChar : integer;                   //Последний нажатый символ
+  IsQuit : boolean;                     //Конец программы или нет
+  LastChange : longint;                 //Время последнего нажатия клавиши
+  _CurrentState : byte;                 //Текущее состояние
+  _CurrentMap : string;                 //Текущее имя карты
   
-  PlayerNames  : plNames;
-  PlayerScores : plScores;
+  PlayerNames  : plNames;               //Имена игроков
+  PlayerScores : plScores;              //Счет игроков
   
-procedure ChangeState(toState : byte); 
+{Процедура смены текущего состояния             }
+{Параметры: toState - на какое состояние менять }
+procedure ChangeState(toState : byte);
+{Процедура очищающая данные состояния }
+{Параметры: startPos - состояние      }
 procedure DisposeState(state : byte);
+{Процедура инициализирующая данные состояния }
+{Параметры: startPos - состояние             }
 procedure InitState(state : byte); 
 
 implementation
